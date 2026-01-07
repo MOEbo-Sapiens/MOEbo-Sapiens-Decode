@@ -12,9 +12,4 @@ public class IntakingState implements State {
     public void execute(Object robot, Object telemetry) {
         //TODO: implement
     }
-
-
-    public StateNames getState() {
-        return StateNames.INTAKING;
-    }
 }

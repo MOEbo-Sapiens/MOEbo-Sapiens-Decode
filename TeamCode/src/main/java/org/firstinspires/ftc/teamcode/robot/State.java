@@ -6,9 +6,4 @@ public interface State {
 
     void initialize(Robot robot, IRobot prevState);
     void execute(Robot robot, Telemetry telemetry);
-    StateNames getState();
-}
-
-public enum StateBuilder {
-    INTAKING()
 }

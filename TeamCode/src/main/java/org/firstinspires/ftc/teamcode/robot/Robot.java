@@ -42,9 +42,6 @@ public class Robot {
         driveMap.put(Drivetrain.DriveMode.SWERVE_ANGLE, new SwerveAngle(hardwareMap));
         driveMap.put(Drivetrain.DriveMode.MECANUM_ANGLE, new MecanumAngle(hardwareMap));
 
-        instanceStateMap.put(State.StateNames.SHOOTING, () -> new InitialState(joystick));
-        instanceStateMap.put(State.StateNames.INTAKING, () -> new InitialState(joystick));
-
         vision = new LimelightManager(hardwareMap);
         vision.registerPipeline(new ArtifactColorPipeline(0, vision));
         vision.registerPipeline(new ObeliskAprilTagPipeline(1, vision));
