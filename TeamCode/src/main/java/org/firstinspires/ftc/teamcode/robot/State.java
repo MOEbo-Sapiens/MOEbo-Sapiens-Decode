@@ -4,6 +4,6 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public interface State {
 
-    void initialize(Robot robot, IRobot prevState);
-    void execute(Robot robot, Telemetry telemetry);
+    void initialize(Robot robot, State prevState, Telemetry telemetry);
+    void execute(Robot robot);
 }
