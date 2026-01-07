@@ -2,15 +2,23 @@ package org.firstinspires.ftc.teamcode.states;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.robot.Robot;
-import org.firstinspires.ftc.teamcode.robot.State;
 
 public class IntakingState implements State {
 
-    public void initialize(Robot robot, State prevState, Telemetry telemetry) {
+    Telemetry telemetry;
+    public IntakingState(Telemetry telemetry) {
+       this.telemetry = telemetry;
+    }
+
+    public void initialize(Robot robot, State prevState) {
         //TODO: implement
     }
 
     public void execute(Robot robot) {
         //TODO: implement
+    }
+
+    public String name(){
+        return "Intaking";
     }
 }

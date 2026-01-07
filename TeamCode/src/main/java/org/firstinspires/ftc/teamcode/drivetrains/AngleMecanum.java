@@ -2,12 +2,14 @@ package org.firstinspires.ftc.teamcode.drivetrains;
 
 import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
-public class AngleSwerve extends Swerve {
+public class AngleMecanum extends Mecanum{
     //AnglePID
-    public AngleSwerve(Follower follower, Telemetry telemetry) {
+
+    public AngleMecanum(Follower follower, Telemetry telemetry) {
         super(follower, telemetry);
     }
 
@@ -25,6 +27,6 @@ public class AngleSwerve extends Swerve {
 
     @Override
     public String name() {
-        return "Angle Swerve";
+        return "Angle Mecanum";
     }
 }

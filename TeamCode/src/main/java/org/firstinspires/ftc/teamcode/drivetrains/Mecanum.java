@@ -1,0 +1,40 @@
+package org.firstinspires.ftc.teamcode.drivetrains;
+
+import com.pedropathing.follower.Follower;
+import com.qualcomm.robotcore.hardware.Gamepad;
+
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
+public class Mecanum implements Drivetrain {
+    private Telemetry telemetry;
+    private com.pedropathing.ftc.drivetrains.Mecanum dt;
+
+    public Mecanum(Follower follower, Telemetry telemetry) {
+       dt = (com.pedropathing.ftc.drivetrains.Mecanum) follower.getDrivetrain();
+       this.telemetry = telemetry;
+    }
+
+    @Override
+    public void update(Gamepad gamepad, double speed, double rotSpeed) {
+        arcade(-gamepad.left_stick_y, gamepad.left_stick_x*1.1, gamepad.right_stick_x, speed, rotSpeed);
+    }
+
+    @Override
+    public void arcade(double forward, double strafe, double rotate, double speed, double rotSpeed) {
+        rotate *= rotSpeed;
+        double denominator = Math.max(Math.abs(forward) + Math.abs(strafe) + Math.abs(rotate), 1);
+        double frontLeftPower = (forward + strafe + rotate) / denominator;
+        double backLeftPower = (forward - strafe + rotate) / denominator;
+        double frontRightPower = (forward - strafe - rotate) / denominator;
+        double backRightPower = (forward + strafe - rotate) / denominator;
+
+        //pedro impl for run drive sets in this order:
+        //motors = Arrays.asList(leftFront, leftRear, rightFront, rightRear);
+        dt.runDrive(new double[] {frontLeftPower * speed, backLeftPower * speed, frontRightPower * speed, backRightPower * speed});
+    }
+
+    @Override
+    public String name() {
+        return "Mecanum";
+    }
+}

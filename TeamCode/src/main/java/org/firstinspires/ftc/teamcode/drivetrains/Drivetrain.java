@@ -1,9 +1,7 @@
-package org.firstinspires.ftc.teamcode.robot;
+package org.firstinspires.ftc.teamcode.drivetrains;
 
 
 import com.qualcomm.robotcore.hardware.Gamepad;
-
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public interface Drivetrain {
     default void update(Gamepad gamepad) {
@@ -20,10 +18,5 @@ public interface Drivetrain {
 
     void arcade(double forward, double strafe, double rotate, double speed, double rotSpeed);
 
-    public enum DriveMode {
-        SWERVE,
-        SWERVE_ANGLE,
-        MECANUM,
-        MECANUM_ANGLE
-    }
+    String name();
 }
