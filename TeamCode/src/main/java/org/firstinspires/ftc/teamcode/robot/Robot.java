@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.robot;
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.ivy.Scheduler;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -12,7 +13,6 @@ import org.firstinspires.ftc.teamcode.vision.LimelightManager;
 import org.firstinspires.ftc.teamcode.vision.pipelines.ArtifactColorPipeline;
 import org.firstinspires.ftc.teamcode.vision.pipelines.LocalizationAprilTagPipeline;
 import org.firstinspires.ftc.teamcode.vision.pipelines.ObeliskAprilTagPipeline;
-import org.firstinspires.ftc.teamcode.wrappers.JoystickWrapper;
 
 public class Robot {
 
@@ -37,12 +37,15 @@ public class Robot {
 
         setDrivetrain(Drivetrains.SWERVE);
         setState(States.SHOOTING);
+
+        vision = new LimelightManager(hardwareMap);
     }
 
     public void execute() {
         telemetry.addData("State:", getCurrentState().name());
         currentState.execute(this);
         vision.updateAll();
+        Scheduler.execute();
         telemetry.update();
     }
 
