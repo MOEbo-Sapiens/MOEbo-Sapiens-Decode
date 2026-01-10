@@ -19,6 +19,8 @@ public class Robot {
     private State currentState;
     private final HardwareMap hardwareMap;
 
+    Intake intake;
+
     Follower follower;
 
     private Drivetrain drivetrain;
