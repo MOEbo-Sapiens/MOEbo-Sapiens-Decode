@@ -36,8 +36,8 @@ public class AprilTagPipeline implements VisionPipeline {
             int tagCount = llResult.getFiducialResults().size();
             result = new VisionResult(pose, tagCount);
 
-            telemetry.addData("Tx", "%.1f", llResult.getTx());
-            telemetry.addData("Ty", "%.1f", llResult.getTy());
+            telemetry.addData("Tx", llResult.getTx());
+            telemetry.addData("Ty", llResult.getTy());
             telemetry.addData("Tags", tagCount);
         }
     }

@@ -36,9 +36,9 @@ public class ColorPipeline implements VisionPipeline {
         if (llResult != null && llResult.isValid()) {
             List<LLResultTypes.ColorResult> colorResults = llResult.getColorResults();
 
-            telemetry.addData("Tx", "%.1f", llResult.getTx());
-            telemetry.addData("Ty", "%.1f", llResult.getTy());
-            telemetry.addData("Area", "%.1f", llResult.getTa());
+            telemetry.addData("Tx", llResult.getTx());
+            telemetry.addData("Ty", llResult.getTy());
+            telemetry.addData("Area",  llResult.getTa());
             telemetry.addData("Colors", colorResults.size());
         }
     }

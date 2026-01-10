@@ -37,9 +37,9 @@ public class LocalizationPipeline implements VisionPipeline {
             result = new VisionResult(pose, tagCount);
 
             if (pose != null) {
-                telemetry.addData("MT2 X", "%.2f", pose.getPosition().x);
-                telemetry.addData("MT2 Y", "%.2f", pose.getPosition().y);
-                telemetry.addData("MT2 Yaw", "%.1f°", pose.getOrientation().getYaw());
+                telemetry.addData("MT2 X", pose.getPosition().x);
+                telemetry.addData("MT2 Y", pose.getPosition().y);
+                telemetry.addData("MT2 Yaw",pose.getOrientation().getYaw());
                 telemetry.addData("Tags", tagCount);
             }
         }
