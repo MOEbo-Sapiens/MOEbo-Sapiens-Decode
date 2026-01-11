@@ -19,7 +19,6 @@ public class Constants {
         double CONTACT_ARC_ANGLE = Math.toRadians(-18.241);
         double FLYWHEEL_RADIUS = 1.41732; // INCHES
         double BALL_RADIUS = 2.5; // INCHES
-        double GRAVITY = 386.0885; // INCHES PER SECOND SQUARED
         double TOTAL_RADIUS = FLYWHEEL_RADIUS + BALL_RADIUS;
 
         Pose BLUE_GOAL_POSE = new Pose(10, 134, Math.toRadians(180));
