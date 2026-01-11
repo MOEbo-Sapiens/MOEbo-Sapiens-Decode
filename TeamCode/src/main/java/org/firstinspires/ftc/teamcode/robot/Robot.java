@@ -10,9 +10,9 @@ import org.firstinspires.ftc.teamcode.drivetrains.Drivetrain;
 import org.firstinspires.ftc.teamcode.pedroPathing.PedroConstants;
 import org.firstinspires.ftc.teamcode.states.State;
 import org.firstinspires.ftc.teamcode.vision.LimelightManager;
-import org.firstinspires.ftc.teamcode.vision.pipelines.ArtifactColorPipeline;
-import org.firstinspires.ftc.teamcode.vision.pipelines.LocalizationAprilTagPipeline;
-import org.firstinspires.ftc.teamcode.vision.pipelines.ObeliskAprilTagPipeline;
+import org.firstinspires.ftc.teamcode.vision.Pipelines;
+import org.firstinspires.ftc.teamcode.vision.VisionPipeline;
+import org.firstinspires.ftc.teamcode.vision.VisionResult;
 
 public class Robot {
 
@@ -24,10 +24,11 @@ public class Robot {
     Follower follower;
 
     private Drivetrain drivetrain;
+    private LimelightManager limelightManager;
+
     Gamepad gamepad1;
     Gamepad gamepad2;
     Telemetry telemetry;
-    private LimelightManager vision;
     public Robot(HardwareMap hardwareMap, Gamepad gamepad1, Gamepad gamepad2, Telemetry telemetry) {
         this.telemetry = telemetry;
 
@@ -40,20 +41,19 @@ public class Robot {
         setDrivetrain(Drivetrains.SWERVE);
         setState(States.SHOOTING);
 
-        vision = new LimelightManager(hardwareMap);
+        limelightManager = new LimelightManager(hardwareMap, telemetry);
+        setPipeline(Pipelines.APRIL_TAG);
     }
 
     public void execute() {
         telemetry.addData("State:", getCurrentState().name());
+        telemetry.addData("Pipeline:", limelightManager.getCurrentPipelineName());
         currentState.execute(this);
-        vision.updateAll();
+        limelightManager.process(this);
         Scheduler.execute();
         telemetry.update();
     }
 
-    public LimelightManager getVision() {
-        return vision;
-    }
 
     public States getCurrentState() {
         if (currentState != null) {
@@ -83,5 +83,33 @@ public class Robot {
 
     public String drivetrainName() {
         return drivetrain.name();
+    }
+
+    public void setPipeline(Pipelines pipeline) {
+        limelightManager.setPipeline(pipeline);
+    }
+
+    public void cycleNextPipeline() {
+        limelightManager.cycleNext();
+    }
+
+    public void cyclePreviousPipeline() {
+        limelightManager.cyclePrevious();
+    }
+
+    public Pipelines getCurrentPipeline() {
+        return limelightManager.getCurrentPipelineEnum();
+    }
+
+    public VisionPipeline getVisionPipeline() {
+        return limelightManager.getCurrentPipeline();
+    }
+
+    public LimelightManager getLimelightManager() {
+        return limelightManager;
+    }
+
+    public VisionResult getVisionResult() {
+        return limelightManager.getResult();
     }
 }
