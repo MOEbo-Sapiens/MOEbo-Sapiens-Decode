@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.shooter;
 
-import com.pedropathing.ivy.CommandBuilder;
-import com.pedropathing.ivy.commands.Commands;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -60,15 +58,11 @@ public class Flywheel {
         activated = true;
     }
 
-    public void shooterToggle() {
+    public void toggle() {
         activated = !activated;
         if (!activated) {
             setPower(0);
         }
-    }
-
-    public CommandBuilder toggle() {
-        return Commands.instant(this::shooterToggle);
     }
 
     public void update() {
