@@ -1,10 +1,10 @@
-package org.firstinspires.ftc.teamcode.shooter;
+package org.firstinspires.ftc.teamcode.shooter.math;
 
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode.util.Vector2D;
 
-public class RevAmpedProjectileMathWithDrag {
+public class ProjectileMath {
     private static final double g = 386.0885; // gravity in in/s^2
 
     // FIXED: Air density in slugs/in³ (0.0023769 slugs/ft³ ÷ 1728)
