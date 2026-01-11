@@ -1,17 +1,13 @@
-package org.firstinspires.ftc.teamcode.shooter;
+package org.firstinspires.ftc.teamcode.shooter.math;
+
+import com.pedropathing.geometry.Pose;
 
 /**
  * ShooterSolver: Computes optimal hood angle, turret angle, and flywheel speed for shooting while
  * the robot is moving.
- * 
- * SOLVER APPROACH: ================ Rather than binary search (which assumes monotonicity), we use
- * Newton-Raphson on the "closest approach" residual:
- * 
- * 1. For a given θ_h, compute the full ball trajectory 2. Find the point on the trajectory closest
- * to the goal 3. r(θ_h) = signed distance from trajectory to goal at closest approach 4. Compute
- * r'(θ_h) numerically 5. Newton update: θ_h ← θ_h - r / r' 6. Converged when |r| < tolerance
- * 
- * This handles non-monotonic relationships between θ_h and trajectory.
+ * * REFACTOR NOTE: This version uses the Pedro Pathing 'Pose' class for positions and velocities.
+ * - Positions: x, y, heading
+ * - Velocities: x = vx, y = vy, heading = angular_velocity (omega)
  */
 public class ShooterSolver {
 
@@ -58,11 +54,6 @@ public class ShooterSolver {
 
     /**
      * Launch angle offset: launch_angle = LAUNCH_ANGLE_OFFSET - hood_angle
-     * 
-     * From calibration: hood 40° → launch 50° (hood min → launch max) hood 80° → launch 10° (hood
-     * max → launch min)
-     * 
-     * So: launch = 90° - hood
      */
     private static final double LAUNCH_ANGLE_OFFSET = Math.toRadians(90);
 
@@ -140,7 +131,7 @@ public class ShooterSolver {
         public final String errorMessage;
 
         public ShotSolution(double hoodAngle, double turretAngle, double flywheelSpeed,
-                double totalTime, double distanceToGoal, double residual) {
+                            double totalTime, double distanceToGoal, double residual) {
             this.hoodAngle = hoodAngle;
             this.turretAngle = turretAngle;
             this.flywheelSpeed = flywheelSpeed;
@@ -172,16 +163,15 @@ public class ShooterSolver {
         double tContact;
         double tTotal;
         double distance;
-        double releasePoseX;
-        double releasePoseY;
-        double releasePoseHeading;
-        double robotVelX;
-        double robotVelY;
+
+        // Poses using PedroPathing Pose class
+        Pose releasePose; // x, y, heading at release
+        Pose releaseVel;  // vx, vy, omega at release
 
         // From turret solve
         double turretAngle;
         double horizontalSpeed; // λ - horizontal ball speed toward goal
-        double verticalSpeed; // Vertical ball speed
+        double verticalSpeed;   // Vertical ball speed
         double launchDirectionX; // Unit vector of ball horizontal direction
         double launchDirectionY;
         boolean turretValid;
@@ -200,9 +190,13 @@ public class ShooterSolver {
 
     /**
      * Solves for optimal shot parameters using Newton-Raphson on closest-approach residual.
+     * * @param robotPose Current Robot Pose (x, y, heading)
+     * @param robotVel  Current Robot Velocity (x=vx, y=vy, heading=omega)
+     * @param goalX     Target X coordinate
+     * @param goalY     Target Y coordinate
+     * @return ShotSolution containing hood angle, turret angle, etc.
      */
-    public static ShotSolution solve(double robotX, double robotY, double robotHeading,
-            double robotVelX, double robotVelY, double robotOmega, double goalX, double goalY) {
+    public static ShotSolution solve(Pose robotPose, Pose robotVel, double goalX, double goalY) {
 
         // ---------------------------------------------------------------------
         // INITIAL GUESS: Start at middle of hood angle range
@@ -221,8 +215,7 @@ public class ShooterSolver {
         for (int iter = 0; iter < MAX_NEWTON_ITERATIONS; iter++) {
 
             // Compute state and residual at current θ_h
-            ShotState state = computeFullState(thetaH, robotX, robotY, robotHeading, robotVelX,
-                    robotVelY, robotOmega, goalX, goalY);
+            ShotState state = computeFullState(thetaH, robotPose, robotVel, goalX, goalY);
 
             if (state == null || !state.turretValid) {
                 // Invalid state - try perturbing θ_h
@@ -255,11 +248,8 @@ public class ShooterSolver {
             double thetaPlus = Math.min(thetaH + DERIVATIVE_DELTA, MAX_HOOD_ANGLE);
             double thetaMinus = Math.max(thetaH - DERIVATIVE_DELTA, MIN_HOOD_ANGLE);
 
-            ShotState statePlus = computeFullState(thetaPlus, robotX, robotY, robotHeading,
-                    robotVelX, robotVelY, robotOmega, goalX, goalY);
-
-            ShotState stateMinus = computeFullState(thetaMinus, robotX, robotY, robotHeading,
-                    robotVelX, robotVelY, robotOmega, goalX, goalY);
+            ShotState statePlus = computeFullState(thetaPlus, robotPose, robotVel, goalX, goalY);
+            ShotState stateMinus = computeFullState(thetaMinus, robotPose, robotVel, goalX, goalY);
 
             // Handle edge cases where derivative computation fails
             if (statePlus == null || !statePlus.turretValid || stateMinus == null
@@ -282,7 +272,6 @@ public class ShooterSolver {
 
             if (Math.abs(dr_dtheta) < 1e-6) {
                 // Derivative too small - use gradient descent instead
-                // Since dr/dθ < 0, increase θ when r > 0
                 thetaH += Math.signum(r) * Math.toRadians(2);
             } else {
                 double delta = r / dr_dtheta;
@@ -315,12 +304,8 @@ public class ShooterSolver {
     // COMPUTE FULL STATE FOR A GIVEN HOOD ANGLE
     // =========================================================================
 
-    /**
-     * Computes all intermediate values and the residual for a given hood angle.
-     */
-    private static ShotState computeFullState(double thetaH, double robotX, double robotY,
-            double robotHeading, double robotVelX, double robotVelY, double robotOmega,
-            double goalX, double goalY) {
+    private static ShotState computeFullState(double thetaH, Pose robotPose, Pose robotVel,
+                                              double goalX, double goalY) {
 
         ShotState state = new ShotState();
 
@@ -328,8 +313,7 @@ public class ShooterSolver {
         // INNER LOOP: Solve for (ω_f, t_contact, d)
         // ---------------------------------------------------------------------
 
-        if (!solveInnerLoop(state, thetaH, robotX, robotY, robotHeading, robotVelX, robotVelY,
-                robotOmega, goalX, goalY)) {
+        if (!solveInnerLoop(state, thetaH, robotPose, robotVel, goalX, goalY)) {
             return null;
         }
 
@@ -355,18 +339,14 @@ public class ShooterSolver {
     // =========================================================================
 
     /**
-     * Solves for flywheel speed, contact time, and distance via fixed-point iteration. Results are
-     * stored in the state object.
-     * 
-     * @return true if converged, false otherwise
+     * Solves for flywheel speed, contact time, and distance via fixed-point iteration.
      */
-    private static boolean solveInnerLoop(ShotState state, double thetaH, double robotX,
-            double robotY, double robotHeading, double robotVelX, double robotVelY,
-            double robotOmega, double goalX, double goalY) {
+    private static boolean solveInnerLoop(ShotState state, double thetaH, Pose robotPose,
+                                          Pose robotVel, double goalX, double goalY) {
 
         // Initial guess based on current distance
-        double dxInitial = goalX - robotX;
-        double dyInitial = goalY - robotY;
+        double dxInitial = goalX - robotPose.getX();
+        double dyInitial = goalY - robotPose.getY();
         double distInitial = Math.sqrt(dxInitial * dxInitial + dyInitial * dyInitial);
         double omegaF = flywheelSpeedFromDistance(distInitial);
 
@@ -376,16 +356,15 @@ public class ShooterSolver {
             double tContact = computeContactTime(thetaH, omegaF);
             double tTotal = T_INIT + tContact;
 
-            // Compute release pose
-            double[] releasePose = twistIntegrate(robotX, robotY, robotHeading, robotVelX,
-                    robotVelY, robotOmega, tTotal);
+            // Compute release pose (Predict robot motion during shot windup/transit)
+            Pose releasePose = twistIntegrate(robotPose, robotVel, tTotal);
 
-            // Compute distance to goal
-            double dx = goalX - releasePose[0];
-            double dy = goalY - releasePose[1];
+            // Compute distance to goal from PREDICTED release point
+            double dx = goalX - releasePose.getX();
+            double dy = goalY - releasePose.getY();
             double dist = Math.sqrt(dx * dx + dy * dy);
 
-            // New flywheel speed
+            // New flywheel speed required for this distance
             double omegaFNew = flywheelSpeedFromDistance(dist);
 
             // Check convergence
@@ -395,16 +374,22 @@ public class ShooterSolver {
                 state.tContact = tContact;
                 state.tTotal = tTotal;
                 state.distance = dist;
-                state.releasePoseX = releasePose[0];
-                state.releasePoseY = releasePose[1];
-                state.releasePoseHeading = releasePose[2];
+                state.releasePose = releasePose;
 
-                // Robot velocity at release
-                double dtheta = robotOmega * tTotal;
+                // Compute Robot velocity at release (rotate velocity vector by change in heading)
+                double dtheta = robotVel.getHeading() * tTotal; // Omega * t
                 double cos = Math.cos(dtheta);
                 double sin = Math.sin(dtheta);
-                state.robotVelX = robotVelX * cos - robotVelY * sin;
-                state.robotVelY = robotVelX * sin + robotVelY * cos;
+
+                double vx = robotVel.getX();
+                double vy = robotVel.getY();
+
+                // Rotate velocity vector
+                double newVx = vx * cos - vy * sin;
+                double newVy = vx * sin + vy * cos;
+
+                // Store in Pose (x=vx, y=vy, heading=omega)
+                state.releaseVel = new Pose(newVx, newVy, robotVel.getHeading());
 
                 return true;
             }
@@ -416,90 +401,88 @@ public class ShooterSolver {
     }
 
     // =========================================================================
-    // TURRET COMPENSATION
+    // TURRET COMPENSATION (Analytic Sine Rule)
     // =========================================================================
 
-    /**
-     * Solves for turret angle using vector triangle method. Results stored in state object.
-     * 
-     * @return true if valid solution exists, false if robot too fast
-     */
     private static boolean solveTurretAngle(ShotState state, double thetaH, double goalX,
-            double goalY) {
+                                            double goalY) {
 
-        // Convert hood angle to launch angle for trajectory calculations
+        // 1. Calculate Shooter Physics
         double launchAngle = hoodAngleToLaunchAngle(thetaH);
-
-        // Shooter velocity magnitude (depends on hood angle for contact arc)
         double vShooter = computeExitVelocity(thetaH, state.omegaFlywheel);
 
-        // Velocity components use LAUNCH angle (actual trajectory direction)
+        // Horizontal component of shot speed (relative to robot)
         double vHorizontal = vShooter * Math.cos(launchAngle);
         double vVertical = vShooter * Math.sin(launchAngle);
 
         state.verticalSpeed = vVertical;
 
-        // Direction to goal
-        double dx = goalX - state.releasePoseX;
-        double dy = goalY - state.releasePoseY;
-        double distHoriz = Math.sqrt(dx * dx + dy * dy);
+        // 2. Goal Geometry
+        double dx = goalX - state.releasePose.getX();
+        double dy = goalY - state.releasePose.getY();
+        double distToGoal = Math.sqrt(dx * dx + dy * dy);
 
-        if (distHoriz < 1e-6) {
+        if (distToGoal < 1e-6) {
             state.turretValid = false;
             return false;
         }
 
-        double alpha = Math.atan2(dy, dx);
-        double uX = Math.cos(alpha);
-        double uY = Math.sin(alpha);
+        // 3. Analytic Solution
+        // We need the shooter's tangential component to cancel the robot's tangential component.
 
-        // Project robot velocity onto goal direction
-        double c = state.robotVelX * uX + state.robotVelY * uY;
+        // Robot Velocity at release
+        double rVelX = state.releaseVel.getX();
+        double rVelY = state.releaseVel.getY();
 
-        // Perpendicular component squared
-        double vRobotSq = state.robotVelX * state.robotVelX + state.robotVelY * state.robotVelY;
-        double vPerpSq = vRobotSq - c * c;
+        // Calculate Robot's tangential velocity relative to the goal line using 2D cross product.
+        // v_tan = (v_robot x d_goal) / |d_goal| = (vx*dy - vy*dx) / dist
+        double crossProduct = rVelX * dy - rVelY * dx;
+        double vRobotTangential = crossProduct / distToGoal;
 
-        // Check solvability
-        if (vHorizontal * vHorizontal < vPerpSq) {
+        // Validity Check: Can the shooter physically cancel this sideways motion?
+        if (Math.abs(vRobotTangential) > vHorizontal) {
             state.turretValid = false;
             return false;
         }
 
-        // Solve for λ (resultant speed toward goal)
-        double lambda = c + Math.sqrt(vHorizontal * vHorizontal - vPerpSq);
+        // Calculate the angle offset (beta) required.
+        // v_shot * sin(beta) + v_robot_tan = 0 -> sin(beta) = -v_robot_tan / v_shot
+        double sinBeta = -vRobotTangential / vHorizontal;
+        double beta = Math.asin(sinBeta);
 
-        // Shooter direction (field frame)
-        double vShooterX = lambda * uX - state.robotVelX;
-        double vShooterY = lambda * uY - state.robotVelY;
-        double beta = Math.atan2(vShooterY, vShooterX);
+        // 4. Compute Outputs
 
-        // Store results
-        state.turretAngle = wrapAngle(beta - state.releasePoseHeading);
-        state.horizontalSpeed = lambda;
-        state.launchDirectionX = uX;
-        state.launchDirectionY = uY;
+        // Turret Angle (Field Frame) = AngleToGoal + Offset
+        double angleToGoal = Math.atan2(dy, dx);
+        double turretFieldHeading = angleToGoal + beta;
+
+        // Convert to Robot Frame
+        state.turretAngle = wrapAngle(turretFieldHeading - state.releasePose.getHeading());
+
+        // Calculate Resultant Speed (Lambda) toward goal for trajectory calculation.
+        // v_radial_total = v_robot_radial + v_shot_radial
+        double dotProduct = rVelX * dx + rVelY * dy;
+        double vRobotRadial = dotProduct / distToGoal;
+
+        // v_shot_radial = v_shot * cos(beta)
+        double vShooterRadial = vHorizontal * Math.cos(beta);
+
+        state.horizontalSpeed = vRobotRadial + vShooterRadial;
+
+        // The ball travels directly at the goal
+        state.launchDirectionX = dx / distToGoal;
+        state.launchDirectionY = dy / distToGoal;
         state.turretValid = true;
 
         return true;
     }
 
     // =========================================================================
-    // TRAJECTORY ANALYSIS: Find closest approach to goal
+    // TRAJECTORY ANALYSIS
     // =========================================================================
 
-    /**
-     * Computes the trajectory and finds the point closest to the goal.
-     * 
-     * The trajectory is parameterized by time t: x(t) = release_x + (1/k) * ln(1 + k * λ * t) *
-     * dir_x y(t) = release_y + (1/k) * ln(1 + k * λ * t) * dir_y z(t) = launch_height + v_vertical
-     * * t - 0.5 * g * t²
-     * 
-     * We sample the trajectory and find where it's closest to (goal_x, goal_y, goal_z). The
-     * "residual" is the signed vertical distance at the horizontal closest approach.
-     */
     private static void computeClosestApproach(ShotState state, double thetaH, double goalX,
-            double goalY) {
+                                               double goalY) {
 
         double lambda = state.horizontalSpeed;
         double vVert = state.verticalSpeed;
@@ -507,8 +490,8 @@ public class ShooterSolver {
         double dirY = state.launchDirectionY;
 
         // Release position
-        double x0 = state.releasePoseX;
-        double y0 = state.releasePoseY;
+        double x0 = state.releasePose.getX();
+        double y0 = state.releasePose.getY();
         double z0 = LAUNCH_HEIGHT;
 
         // Goal position
@@ -516,49 +499,24 @@ public class ShooterSolver {
         double gy = goalY;
         double gz = GOAL_HEIGHT;
 
-        // ---------------------------------------------------------------------
-        // Find time when ball is at horizontal distance closest to goal
-        // ---------------------------------------------------------------------
-
-        // Horizontal distance from release to goal
-        double horizDist = state.distance;
-
         // Time to reach that horizontal distance (with drag)
-        // x_horiz = (1/k) * ln(1 + k * λ * t)
-        // horizDist = (1/k) * ln(1 + k * λ * t)
-        // t = (exp(k * horizDist) - 1) / (k * λ)
-
+        double horizDist = state.distance;
         double E = Math.exp(k * horizDist) - 1;
         double tAtGoal = E / (k * lambda);
 
         // Clamp to reasonable range
         tAtGoal = clamp(tAtGoal, 0, MAX_TRAJECTORY_TIME);
 
-        // ---------------------------------------------------------------------
         // Compute position at this time
-        // ---------------------------------------------------------------------
-
-        // Horizontal position
         double horizTravel = (1.0 / k) * Math.log(1 + k * lambda * tAtGoal);
         double xAtGoal = x0 + horizTravel * dirX;
         double yAtGoal = y0 + horizTravel * dirY;
-
-        // Vertical position
         double zAtGoal = z0 + vVert * tAtGoal - 0.5 * g * tAtGoal * tAtGoal;
-
-        // ---------------------------------------------------------------------
-        // Store results
-        // ---------------------------------------------------------------------
 
         state.closestT = tAtGoal;
         state.closestX = xAtGoal;
         state.closestY = yAtGoal;
         state.closestZ = zAtGoal;
-
-        // Residual: signed vertical distance
-        // Positive = ball is above goal (need to increase hood angle to lower trajectory)
-        // Negative = ball is below goal (need to decrease hood angle to raise trajectory)
-        // Note: Higher hood angle → lower launch angle → lower trajectory
         state.residual = zAtGoal - gz;
     }
 
@@ -566,50 +524,27 @@ public class ShooterSolver {
     // PHYSICS HELPER METHODS
     // =========================================================================
 
-    /**
-     * Converts hood angle (mechanical) to launch angle (trajectory).
-     * 
-     * Hood angle: servo/mechanical position (40-80°) Launch angle: actual angle above horizontal
-     * (10-50°)
-     * 
-     * Relationship: launch = 90° - hood
-     */
     private static double hoodAngleToLaunchAngle(double hoodAngle) {
         return LAUNCH_ANGLE_OFFSET - hoodAngle;
     }
 
-    /**
-     * Computes velocity ratio A(θ) as function of hood angle.
-     */
     private static double computeVelocityRatio(double thetaH) {
         double thetaArc = thetaH - THETA_FIRST_CONTACT;
-
-        if (thetaArc <= 0)
-            return 0;
-        if (thetaArc >= THETA_SLIP)
-            return A_MAX;
-
+        if (thetaArc <= 0) return 0;
+        if (thetaArc >= THETA_SLIP) return A_MAX;
         return A_MAX * Math.sqrt(thetaArc / THETA_SLIP);
     }
 
-    /**
-     * Computes ball exit velocity.
-     */
     private static double computeExitVelocity(double thetaH, double omegaFlywheel) {
         return computeVelocityRatio(thetaH) * omegaFlywheel * R_FLYWHEEL;
     }
 
-    /**
-     * Computes contact time as function of hood angle and flywheel speed.
-     */
     private static double computeContactTime(double thetaH, double omegaFlywheel) {
         double thetaArc = thetaH - THETA_FIRST_CONTACT;
-        if (thetaArc <= 0)
-            return 0;
+        if (thetaArc <= 0) return 0;
 
         double vMax = A_MAX * omegaFlywheel * R_FLYWHEEL;
-        if (vMax <= 0)
-            return Double.MAX_VALUE;
+        if (vMax <= 0) return Double.MAX_VALUE;
 
         if (thetaArc < THETA_SLIP) {
             return 2 * R_COMBINED * Math.sqrt(thetaArc * THETA_SLIP) / vMax;
@@ -618,27 +553,34 @@ public class ShooterSolver {
         }
     }
 
-    /**
-     * Flywheel speed from distance (linear regression).
-     */
     private static double flywheelSpeedFromDistance(double distance) {
         return REGRESSION_SLOPE * distance + REGRESSION_INTERCEPT;
     }
 
     // =========================================================================
-    // TWIST INTEGRATION
+    // TWIST INTEGRATION (Updated for Pose)
     // =========================================================================
 
     /**
      * SE(2) exponential map for robot motion prediction.
+     * @param startPose Current Pose
+     * @param vel Current Velocity (x, y, heading=omega)
+     * @param dt Time delta
+     * @return Predicted Pose
      */
-    private static double[] twistIntegrate(double x0, double y0, double theta0, double vxField,
-            double vyField, double omega, double dt) {
+    private static Pose twistIntegrate(Pose startPose, Pose vel, double dt) {
+        double x0 = startPose.getX();
+        double y0 = startPose.getY();
+        double theta0 = startPose.getHeading();
+
+        double vxField = vel.getX();
+        double vyField = vel.getY();
+        double omega = vel.getHeading();
 
         double dtheta = omega * dt;
         double newHeading = wrapAngle(theta0 + dtheta);
 
-        // Convert to body frame
+        // Convert field velocity to body frame for twist calculation
         double cosInit = Math.cos(theta0);
         double sinInit = Math.sin(theta0);
         double vxBody = vxField * cosInit + vyField * sinInit;
@@ -660,7 +602,7 @@ public class ShooterSolver {
         double dxField = dxBody * cosInit - dyBody * sinInit;
         double dyField = dxBody * sinInit + dyBody * cosInit;
 
-        return new double[] {x0 + dxField, y0 + dyField, newHeading};
+        return new Pose(x0 + dxField, y0 + dyField, newHeading);
     }
 
     // =========================================================================
@@ -668,10 +610,8 @@ public class ShooterSolver {
     // =========================================================================
 
     private static double wrapAngle(double angle) {
-        while (angle > Math.PI)
-            angle -= 2 * Math.PI;
-        while (angle < -Math.PI)
-            angle += 2 * Math.PI;
+        while (angle > Math.PI) angle -= 2 * Math.PI;
+        while (angle < -Math.PI) angle += 2 * Math.PI;
         return angle;
     }
 

@@ -32,6 +32,8 @@ public class Shooter {
                 follower.getAngularVelocity()
         );
 
+        currentPose.ge
+
         Pose predictedShootingPose = ShootingPoseCalculation.calculatePoseTwist(currentPose, Constants.)
     }
 
