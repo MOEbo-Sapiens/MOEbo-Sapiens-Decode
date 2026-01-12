@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.shooter.math;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.util.Timer;
 import org.firstinspires.ftc.teamcode.util.Vector2D;
+import smile.interpolation.LinearInterpolation;
 
 /**
  * ShooterSolver: Computes optimal hood angle, turret angle, and flywheel speed for shooting while
@@ -11,14 +12,14 @@ import org.firstinspires.ftc.teamcode.util.Vector2D;
  * SOLVER APPROACH: ================ Rather than binary search (which assumes monotonicity), we use
  * Newton-Raphson on the "closest approach" residual:
  * 
- * 1. For a given θ_h, compute the full ball trajectory
- * 2. Find the point on the trajectory closest
- * to the goal
- * 3. r(θ_h) = signed distance from trajectory to goal at closest approach
- * 4. Compute
- * r'(θ_h) numerically
- * 5. Newton update: θ_h ← θ_h - r / r'
- * 6. Converged when |r| < tolerance
+ * 1. For a given θ_h, compute the full ball trajectory 2. Find the point on the trajectory closest
+ * to the goal 3. r(θ_h) = signed distance from trajectory to goal at closest approach 4. Compute
+ * r'(θ_h) numerically 5. Newton update: θ_h ← θ_h - r / r' 6. Converged when |r| < tolerance
+ * 
+ * SHOOTING ZONES: ================= There are two shooting zones with different flywheel speed
+ * interpolations: - Close zone: Uses higher launch angle (lower hood angle) - searches from
+ * MIN_HOOD_ANGLE - Far zone: Uses lower launch angle (higher hood angle) - searches from
+ * MAX_HOOD_ANGLE
  * 
  * REAL-TIME UPDATE: ================= After solve() is called, updateTurretEstimate() can be called
  * continuously to refine the turret angle as the shot progresses. This compensates for prediction
@@ -44,6 +45,9 @@ public class ShooterSolver {
     /** Stored goal position from last solve() */
     private static double storedGoalX = 0;
     private static double storedGoalY = 0;
+
+    /** Stored close zone flag from last solve() */
+    private static boolean storedCloseZone = false;
 
     /** Flag indicating if we have a valid solution to update */
     private static boolean hasSolution = false;
@@ -149,12 +153,52 @@ public class ShooterSolver {
     private static final double MAX_TRAJECTORY_TIME = 3.0;
 
     // =========================================================================
-    // FLYWHEEL SPEED REGRESSION COEFFICIENTS
+    // FLYWHEEL SPEED INTERPOLATION DATA
     // =========================================================================
 
-    /** Linear regression: ω_f = REGRESSION_SLOPE * distance + REGRESSION_INTERCEPT */
-    private static final double REGRESSION_SLOPE = 1.0; // TODO: Calibrate
-    private static final double REGRESSION_INTERCEPT = 50.0; // TODO: Calibrate
+    /**
+     * Close zone calibration data: distances (inches). Must be in ascending order. TODO: Fill with
+     * calibration data.
+     */
+    private static final double[] CLOSE_DISTANCES = {};
+
+    /**
+     * Close zone calibration data: flywheel speeds (rad/s) corresponding to CLOSE_DISTANCES. TODO:
+     * Fill with calibration data.
+     */
+    private static final double[] CLOSE_VELOCITIES = {};
+
+    /**
+     * Far zone calibration data: distances (inches). Must be in ascending order. TODO: Fill with
+     * calibration data.
+     */
+    private static final double[] FAR_DISTANCES = {};
+
+    /**
+     * Far zone calibration data: flywheel speeds (rad/s) corresponding to FAR_DISTANCES. TODO: Fill
+     * with calibration data.
+     */
+    private static final double[] FAR_VELOCITIES = {};
+
+    /** Linear interpolation for close zone flywheel speeds. Initialized lazily. */
+    private static LinearInterpolation closeLerp = null;
+
+    /** Linear interpolation for far zone flywheel speeds. Initialized lazily. */
+    private static LinearInterpolation farLerp = null;
+
+    /**
+     * Initializes the interpolation objects if not already done and data is available.
+     */
+    private static void initializeInterpolations() {
+        if (closeLerp == null && CLOSE_DISTANCES.length >= 2
+                && CLOSE_DISTANCES.length == CLOSE_VELOCITIES.length) {
+            closeLerp = new LinearInterpolation(CLOSE_DISTANCES, CLOSE_VELOCITIES);
+        }
+        if (farLerp == null && FAR_DISTANCES.length >= 2
+                && FAR_DISTANCES.length == FAR_VELOCITIES.length) {
+            farLerp = new LinearInterpolation(FAR_DISTANCES, FAR_VELOCITIES);
+        }
+    }
 
     // =========================================================================
     // RESULT CLASSES
@@ -267,22 +311,31 @@ public class ShooterSolver {
      * @param robotVel Current Robot Velocity (x=vx, y=vy, heading=omega)
      * @param goalX Target X coordinate
      * @param goalY Target Y coordinate
+     * @param close If true, use close zone (higher launch angle / lower hood angle). If false, use
+     *        far zone (lower launch angle / higher hood angle).
      * @return ShotSolution containing hood angle, turret angle, etc.
      */
-    public static ShotSolution solve(Pose robotPose, Pose robotVel, double goalX, double goalY) {
+    public static ShotSolution solve(Pose robotPose, Pose robotVel, double goalX, double goalY,
+            boolean close) {
+
+        // Initialize interpolations if needed
+        initializeInterpolations();
 
         // Reset timer at the start of a new solution
         timer.resetTimer();
 
-        // Store goal position for updates
+        // Store parameters for updates
         storedGoalX = goalX;
         storedGoalY = goalY;
+        storedCloseZone = close;
 
         // ---------------------------------------------------------------------
-        // INITIAL GUESS: Start at middle of hood angle range
+        // INITIAL GUESS: Based on shooting zone
+        // - Close zone: want higher launch angle → lower hood angle → start from MIN
+        // - Far zone: want lower launch angle → higher hood angle → start from MAX
         // ---------------------------------------------------------------------
 
-        double thetaH = (MIN_HOOD_ANGLE + MAX_HOOD_ANGLE) / 2;
+        double thetaH = close ? MIN_HOOD_ANGLE : MAX_HOOD_ANGLE;
 
         ShotState bestState = null;
         double bestResidual = Double.MAX_VALUE;
@@ -295,13 +348,20 @@ public class ShooterSolver {
         for (int iter = 0; iter < MAX_NEWTON_ITERATIONS; iter++) {
 
             // Compute state and residual at current θ_h
-            ShotState state = computeFullState(thetaH, robotPose, robotVel, goalX, goalY);
+            ShotState state = computeFullState(thetaH, robotPose, robotVel, goalX, goalY, close);
 
             if (state == null || !state.turretValid) {
-                // Invalid state - try perturbing θ_h
-                thetaH += Math.toRadians(5);
-                if (thetaH > MAX_HOOD_ANGLE) {
-                    thetaH = MIN_HOOD_ANGLE + Math.toRadians(5);
+                // Invalid state - try perturbing θ_h toward the other end of the range
+                if (close) {
+                    thetaH += Math.toRadians(5); // Move toward higher hood angles
+                    if (thetaH > MAX_HOOD_ANGLE) {
+                        thetaH = MIN_HOOD_ANGLE + Math.toRadians(5);
+                    }
+                } else {
+                    thetaH -= Math.toRadians(5); // Move toward lower hood angles
+                    if (thetaH < MIN_HOOD_ANGLE) {
+                        thetaH = MAX_HOOD_ANGLE - Math.toRadians(5);
+                    }
                 }
                 continue;
             }
@@ -334,8 +394,10 @@ public class ShooterSolver {
             double thetaPlus = Math.min(thetaH + DERIVATIVE_DELTA, MAX_HOOD_ANGLE);
             double thetaMinus = Math.max(thetaH - DERIVATIVE_DELTA, MIN_HOOD_ANGLE);
 
-            ShotState statePlus = computeFullState(thetaPlus, robotPose, robotVel, goalX, goalY);
-            ShotState stateMinus = computeFullState(thetaMinus, robotPose, robotVel, goalX, goalY);
+            ShotState statePlus =
+                    computeFullState(thetaPlus, robotPose, robotVel, goalX, goalY, close);
+            ShotState stateMinus =
+                    computeFullState(thetaMinus, robotPose, robotVel, goalX, goalY, close);
 
             // Handle edge cases where derivative computation fails
             if (statePlus == null || !statePlus.turretValid || stateMinus == null
@@ -403,8 +465,8 @@ public class ShooterSolver {
      * solve() has been called). It uses the current robot state and remaining time to refine the
      * turret angle, compensating for prediction errors.
      * 
-     * If the estimated time has elapsed (remaining time <= 0), this method will call solve() to
-     * compute a completely new solution.
+     * If the estimated time has elapsed (remaining time <= 0), this method will return invalid and
+     * clear the solution. The caller should call solve() explicitly for a new shot.
      * 
      * @param currentPose Current robot pose (x, y, heading)
      * @param currentVel Current robot velocity (vx, vy, omega)
@@ -494,35 +556,64 @@ public class ShooterSolver {
         double shooterCenterX = releasePose.getX() + shooterOffsetRelX;
         double shooterCenterY = releasePose.getY() + shooterOffsetRelY;
 
-        // 3. Goal Geometry (from shooter center)
-        double dx = goalX - shooterCenterX;
-        double dy = goalY - shooterCenterY;
-        double distToGoal = Math.sqrt(dx * dx + dy * dy);
-
-        if (distToGoal < 1e-6) {
-            return Double.NaN;
-        }
-
-        // 4. Analytic Solution
+        // 3. Robot velocity
         double rVelX = releaseVel.getX();
         double rVelY = releaseVel.getY();
 
-        // Robot's tangential velocity relative to goal
-        double crossProduct = rVelX * dy - rVelY * dx;
-        double vRobotTangential = crossProduct / distToGoal;
+        // 4. Horizontal offset for ball exit
+        double horizOffset = computeBallExitHorizontalOffset(thetaH);
 
-        // Validity Check
-        if (Math.abs(vRobotTangential) > vHorizontal) {
-            return Double.NaN;
+        // 5. Iterative solution: beta depends on ball exit, ball exit depends on turret angle
+        double ballExitX = shooterCenterX;
+        double ballExitY = shooterCenterY;
+        double beta = 0;
+        double turretFieldHeading = 0;
+
+        final int MAX_BETA_ITERATIONS = 5;
+        final double BETA_TOLERANCE = 1e-6;
+
+        for (int i = 0; i < MAX_BETA_ITERATIONS; i++) {
+            // Direction from ball exit to goal
+            double dx = goalX - ballExitX;
+            double dy = goalY - ballExitY;
+            double distToGoal = Math.sqrt(dx * dx + dy * dy);
+
+            if (distToGoal < 1e-6) {
+                return Double.NaN;
+            }
+
+            // Robot's tangential velocity relative to goal
+            double crossProduct = rVelX * dy - rVelY * dx;
+            double vRobotTangential = crossProduct / distToGoal;
+
+            // Validity Check
+            if (Math.abs(vRobotTangential) > vHorizontal) {
+                return Double.NaN;
+            }
+
+            // Calculate angle offset (beta)
+            double sinBeta = -vRobotTangential / vHorizontal;
+            double newBeta = Math.asin(sinBeta);
+
+            // Compute turret angle and ball exit position with current beta
+            double angleToGoal = Math.atan2(dy, dx);
+            turretFieldHeading = angleToGoal + newBeta;
+
+            double turretDirX = Math.cos(turretFieldHeading);
+            double turretDirY = Math.sin(turretFieldHeading);
+
+            double newBallExitX = shooterCenterX + horizOffset * turretDirX;
+            double newBallExitY = shooterCenterY + horizOffset * turretDirY;
+
+            // Check convergence (after first iteration)
+            if (i > 0 && Math.abs(newBeta - beta) < BETA_TOLERANCE) {
+                break;
+            }
+
+            beta = newBeta;
+            ballExitX = newBallExitX;
+            ballExitY = newBallExitY;
         }
-
-        // Calculate angle offset (beta)
-        double sinBeta = -vRobotTangential / vHorizontal;
-        double beta = Math.asin(sinBeta);
-
-        // 5. Compute Turret Angle
-        double angleToGoal = Math.atan2(dy, dx);
-        double turretFieldHeading = angleToGoal + beta;
 
         // Convert to Robot Frame
         return wrapAngle(turretFieldHeading - releasePose.getHeading());
@@ -561,7 +652,7 @@ public class ShooterSolver {
     // =========================================================================
 
     private static ShotState computeFullState(double thetaH, Pose robotPose, Pose robotVel,
-            double goalX, double goalY) {
+            double goalX, double goalY, boolean close) {
 
         ShotState state = new ShotState();
 
@@ -569,7 +660,7 @@ public class ShooterSolver {
         // INNER LOOP: Solve for (ω_f, t_contact, d)
         // ---------------------------------------------------------------------
 
-        if (!solveInnerLoop(state, thetaH, robotPose, robotVel, goalX, goalY)) {
+        if (!solveInnerLoop(state, thetaH, robotPose, robotVel, goalX, goalY, close)) {
             return null;
         }
 
@@ -599,7 +690,7 @@ public class ShooterSolver {
      * computed from shooter center (robot + SHOOTER_OFFSET) to goal.
      */
     private static boolean solveInnerLoop(ShotState state, double thetaH, Pose robotPose,
-            Pose robotVel, double goalX, double goalY) {
+            Pose robotVel, double goalX, double goalY, boolean close) {
 
         // Compute initial shooter center position (robot + SHOOTER_OFFSET rotated to field frame)
         double cosH = Math.cos(robotPose.getHeading());
@@ -614,7 +705,7 @@ public class ShooterSolver {
         double dxInitial = goalX - shooterX;
         double dyInitial = goalY - shooterY;
         double distInitial = Math.sqrt(dxInitial * dxInitial + dyInitial * dyInitial);
-        double omegaF = flywheelSpeedFromDistance(distInitial);
+        double omegaF = flywheelSpeedFromDistance(distInitial, close);
 
         for (int i = 0; i < MAX_INNER_ITERATIONS; i++) {
 
@@ -642,7 +733,7 @@ public class ShooterSolver {
             double dist = Math.sqrt(dx * dx + dy * dy);
 
             // New flywheel speed required for this distance
-            double omegaFNew = flywheelSpeedFromDistance(dist);
+            double omegaFNew = flywheelSpeedFromDistance(dist, close);
 
             // Check convergence
             if (Math.abs(omegaFNew - omegaF) < OMEGA_TOLERANCE) {
@@ -709,82 +800,110 @@ public class ShooterSolver {
         double shooterCenterX = state.releasePose.getX() + shooterOffsetRelX;
         double shooterCenterY = state.releasePose.getY() + shooterOffsetRelY;
 
-        // 3. Goal Geometry (from shooter center)
-        double dx = goalX - shooterCenterX;
-        double dy = goalY - shooterCenterY;
-        double distToGoal = Math.sqrt(dx * dx + dy * dy);
-
-        if (distToGoal < 1e-6) {
-            state.turretValid = false;
-            return false;
-        }
-
-        // 4. Analytic Solution
-        // We need the shooter's tangential component to cancel the robot's tangential component.
-
-        // Robot Velocity at release
+        // 3. Robot Velocity at release
         double rVelX = state.releaseVel.getX();
         double rVelY = state.releaseVel.getY();
 
-        // Calculate Robot's tangential velocity relative to the goal line using 2D cross product.
-        // v_tan = (v_robot x d_goal) / |d_goal| = (vx*dy - vy*dx) / dist
-        double crossProduct = rVelX * dy - rVelY * dx;
-        double vRobotTangential = crossProduct / distToGoal;
+        // 4. Horizontal offset for ball exit
+        double horizOffset = computeBallExitHorizontalOffset(thetaH);
 
-        // Validity Check: Can the shooter physically cancel this sideways motion?
-        if (Math.abs(vRobotTangential) > vHorizontal) {
+        // 5. Iterative solution: beta depends on ball exit, ball exit depends on turret angle
+        // Start with shooter center, iterate to convergence
+        double ballExitX = shooterCenterX;
+        double ballExitY = shooterCenterY;
+        double beta = 0;
+        double turretFieldHeading = 0;
+
+        final int MAX_BETA_ITERATIONS = 5;
+        final double BETA_TOLERANCE = 1e-6;
+
+        for (int i = 0; i < MAX_BETA_ITERATIONS; i++) {
+            // Direction from ball exit to goal
+            double dx = goalX - ballExitX;
+            double dy = goalY - ballExitY;
+            double distToGoal = Math.sqrt(dx * dx + dy * dy);
+
+            if (distToGoal < 1e-6) {
+                state.turretValid = false;
+                return false;
+            }
+
+            // Robot's tangential velocity relative to the goal line (from ball exit)
+            double crossProduct = rVelX * dy - rVelY * dx;
+            double vRobotTangential = crossProduct / distToGoal;
+
+            // Validity Check: Can the shooter physically cancel this sideways motion?
+            if (Math.abs(vRobotTangential) > vHorizontal) {
+                state.turretValid = false;
+                return false;
+            }
+
+            // Calculate the angle offset (beta) required
+            double sinBeta = -vRobotTangential / vHorizontal;
+            double newBeta = Math.asin(sinBeta);
+
+            // Compute turret angle and ball exit position with current beta
+            double angleToGoal = Math.atan2(dy, dx);
+            turretFieldHeading = angleToGoal + newBeta;
+
+            double turretDirX = Math.cos(turretFieldHeading);
+            double turretDirY = Math.sin(turretFieldHeading);
+
+            double newBallExitX = shooterCenterX + horizOffset * turretDirX;
+            double newBallExitY = shooterCenterY + horizOffset * turretDirY;
+
+            // Check convergence (after first iteration)
+            if (i > 0 && Math.abs(newBeta - beta) < BETA_TOLERANCE) {
+                beta = newBeta;
+                ballExitX = newBallExitX;
+                ballExitY = newBallExitY;
+                break;
+            }
+
+            beta = newBeta;
+            ballExitX = newBallExitX;
+            ballExitY = newBallExitY;
+        }
+
+        // 6. Store final turret angle (convert to robot frame)
+        state.turretAngle = wrapAngle(turretFieldHeading - state.releasePose.getHeading());
+
+        // 7. Store ball exit position
+        state.ballExitX = ballExitX;
+        state.ballExitY = ballExitY;
+        state.ballExitZ = computeBallExitHeight(thetaH);
+
+        // 8. Compute final distance from ball exit to goal
+        double dxBall = goalX - ballExitX;
+        double dyBall = goalY - ballExitY;
+        double distBallToGoal = Math.sqrt(dxBall * dxBall + dyBall * dyBall);
+
+        // Safety check: distance should be positive (should always be true if iteration succeeded)
+        if (distBallToGoal < 1e-6) {
             state.turretValid = false;
             return false;
         }
-
-        // Calculate the angle offset (beta) required.
-        // v_shot * sin(beta) + v_robot_tan = 0 -> sin(beta) = -v_robot_tan / v_shot
-        double sinBeta = -vRobotTangential / vHorizontal;
-        double beta = Math.asin(sinBeta);
-
-        // 5. Compute Turret Angle
-        // Turret Angle (Field Frame) = AngleToGoal + Offset
-        double angleToGoal = Math.atan2(dy, dx);
-        double turretFieldHeading = angleToGoal + beta;
-
-        // Convert to Robot Frame
-        state.turretAngle = wrapAngle(turretFieldHeading - state.releasePose.getHeading());
-
-        // 6. Compute ball exit position (with horizontal offset in turret direction)
-        double horizOffset = computeBallExitHorizontalOffset(thetaH);
-        double turretDirX = Math.cos(turretFieldHeading);
-        double turretDirY = Math.sin(turretFieldHeading);
-
-        state.ballExitX = shooterCenterX + horizOffset * turretDirX;
-        state.ballExitY = shooterCenterY + horizOffset * turretDirY;
-        state.ballExitZ = computeBallExitHeight(thetaH);
-
-        // 7. Recompute distance from ball exit to goal
-        double dxBall = goalX - state.ballExitX;
-        double dyBall = goalY - state.ballExitY;
-        double distBallToGoal = Math.sqrt(dxBall * dxBall + dyBall * dyBall);
 
         // Update distance in state (for trajectory calculation)
         state.distance = distBallToGoal;
 
-        // Calculate Resultant Speed (Lambda) toward goal for trajectory calculation.
-        // v_radial_total = v_robot_radial + v_shot_radial
-        double dotProduct = rVelX * dx + rVelY * dy;
-        double vRobotRadial = dotProduct / distToGoal;
+        // 9. Calculate resultant horizontal speed toward goal
+        // Robot's radial velocity component (toward goal from ball exit)
+        double dotProduct = rVelX * dxBall + rVelY * dyBall;
+        double vRobotRadial = dotProduct / distBallToGoal;
 
-        // v_shot_radial = v_shot * cos(beta)
+        // Shot's radial velocity component
         double vShooterRadial = vHorizontal * Math.cos(beta);
 
         state.horizontalSpeed = vRobotRadial + vShooterRadial;
 
         // Validity check: resultant speed toward goal must be positive
-        // (ball must actually be moving toward goal, not away)
         if (state.horizontalSpeed <= 0) {
             state.turretValid = false;
             return false;
         }
 
-        // The ball travels directly at the goal (use direction from ball exit, not shooter center)
+        // 10. Launch direction (from ball exit to goal)
         state.launchDirectionX = dxBall / distBallToGoal;
         state.launchDirectionY = dyBall / distBallToGoal;
         state.turretValid = true;
@@ -877,8 +996,24 @@ public class ShooterSolver {
         }
     }
 
-    private static double flywheelSpeedFromDistance(double distance) {
-        return REGRESSION_SLOPE * distance + REGRESSION_INTERCEPT;
+    /**
+     * Gets flywheel speed from distance using linear interpolation. Uses close or far zone
+     * interpolation based on the close parameter.
+     * 
+     * @param distance Distance to goal in inches
+     * @param close If true, use close zone interpolation; if false, use far zone
+     * @return Flywheel angular velocity in rad/s
+     */
+    private static double flywheelSpeedFromDistance(double distance, boolean close) {
+        LinearInterpolation lerp = close ? closeLerp : farLerp;
+
+        // Fallback if interpolation not initialized (empty calibration data)
+        if (lerp == null) {
+            // Return a reasonable default - this should be replaced with actual calibration
+            return 50.0 + distance; // Placeholder
+        }
+
+        return lerp.interpolate(distance);
     }
 
     /**
