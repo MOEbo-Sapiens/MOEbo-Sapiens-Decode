@@ -120,6 +120,28 @@ public class ShooterSolver {
     private static final double GOAL_HEIGHT = 24.0; // TODO: Set actual value
 
     // =========================================================================
+    // TANGENTIAL VELOCITY TRANSFER CONSTANTS
+    // =========================================================================
+
+    /**
+     * Tangential velocity transfer model: K_TAN = K_TAN_BASE + K_TAN_SLOPE * θ_hood
+     * 
+     * When robot is moving perpendicular to shot direction, not all velocity transfers to the ball
+     * due to slip against the hood. Higher hood angles = more contact time = better transfer.
+     * 
+     * Radial velocity (toward/away from goal) is assumed to transfer 100%.
+     * 
+     * Example: With defaults below: - At hood = 40° (0.70 rad): K = 0.55 + 0.29 * 0.70 ≈ 0.75 - At
+     * hood = 80° (1.40 rad): K = 0.55 + 0.29 * 1.40 ≈ 0.96
+     */
+
+    /** Base tangential transfer coefficient (at θ_hood = 0). TODO: Calibrate */
+    private static final double K_TAN_BASE = 0.55;
+
+    /** Tangential transfer increase per radian of hood angle. TODO: Calibrate */
+    private static final double K_TAN_SLOPE = 0.29;
+
+    // =========================================================================
     // DERIVED CONSTANTS
     // =========================================================================
 
@@ -563,7 +585,10 @@ public class ShooterSolver {
         // 4. Horizontal offset for ball exit
         double horizOffset = computeBallExitHorizontalOffset(thetaH);
 
-        // 5. Iterative solution: beta depends on ball exit, ball exit depends on turret angle
+        // 5. Tangential velocity transfer coefficient (slip compensation)
+        double kTangential = computeTangentialTransfer(thetaH);
+
+        // 6. Iterative solution: beta depends on ball exit, ball exit depends on turret angle
         double ballExitX = shooterCenterX;
         double ballExitY = shooterCenterY;
         double beta = 0;
@@ -586,13 +611,16 @@ public class ShooterSolver {
             double crossProduct = rVelX * dy - rVelY * dx;
             double vRobotTangential = crossProduct / distToGoal;
 
-            // Validity Check
-            if (Math.abs(vRobotTangential) > vHorizontal) {
+            // Effective tangential velocity after slip (only partial transfer)
+            double vRobotTangentialEffective = kTangential * vRobotTangential;
+
+            // Validity Check: Can the shooter physically cancel this sideways motion?
+            if (Math.abs(vRobotTangentialEffective) > vHorizontal) {
                 return Double.NaN;
             }
 
-            // Calculate angle offset (beta)
-            double sinBeta = -vRobotTangential / vHorizontal;
+            // Calculate angle offset (beta) to cancel effective tangential velocity
+            double sinBeta = -vRobotTangentialEffective / vHorizontal;
             double newBeta = Math.asin(sinBeta);
 
             // Compute turret angle and ball exit position with current beta
@@ -807,7 +835,10 @@ public class ShooterSolver {
         // 4. Horizontal offset for ball exit
         double horizOffset = computeBallExitHorizontalOffset(thetaH);
 
-        // 5. Iterative solution: beta depends on ball exit, ball exit depends on turret angle
+        // 5. Tangential velocity transfer coefficient (slip compensation)
+        double kTangential = computeTangentialTransfer(thetaH);
+
+        // 6. Iterative solution: beta depends on ball exit, ball exit depends on turret angle
         // Start with shooter center, iterate to convergence
         double ballExitX = shooterCenterX;
         double ballExitY = shooterCenterY;
@@ -832,14 +863,17 @@ public class ShooterSolver {
             double crossProduct = rVelX * dy - rVelY * dx;
             double vRobotTangential = crossProduct / distToGoal;
 
+            // Effective tangential velocity after slip (only partial transfer)
+            double vRobotTangentialEffective = kTangential * vRobotTangential;
+
             // Validity Check: Can the shooter physically cancel this sideways motion?
-            if (Math.abs(vRobotTangential) > vHorizontal) {
+            if (Math.abs(vRobotTangentialEffective) > vHorizontal) {
                 state.turretValid = false;
                 return false;
             }
 
-            // Calculate the angle offset (beta) required
-            double sinBeta = -vRobotTangential / vHorizontal;
+            // Calculate the angle offset (beta) required to cancel effective tangential velocity
+            double sinBeta = -vRobotTangentialEffective / vHorizontal;
             double newBeta = Math.asin(sinBeta);
 
             // Compute turret angle and ball exit position with current beta
@@ -865,15 +899,15 @@ public class ShooterSolver {
             ballExitY = newBallExitY;
         }
 
-        // 6. Store final turret angle (convert to robot frame)
+        // 7. Store final turret angle (convert to robot frame)
         state.turretAngle = wrapAngle(turretFieldHeading - state.releasePose.getHeading());
 
-        // 7. Store ball exit position
+        // 8. Store ball exit position
         state.ballExitX = ballExitX;
         state.ballExitY = ballExitY;
         state.ballExitZ = computeBallExitHeight(thetaH);
 
-        // 8. Compute final distance from ball exit to goal
+        // 9. Compute final distance from ball exit to goal
         double dxBall = goalX - ballExitX;
         double dyBall = goalY - ballExitY;
         double distBallToGoal = Math.sqrt(dxBall * dxBall + dyBall * dyBall);
@@ -887,8 +921,8 @@ public class ShooterSolver {
         // Update distance in state (for trajectory calculation)
         state.distance = distBallToGoal;
 
-        // 9. Calculate resultant horizontal speed toward goal
-        // Robot's radial velocity component (toward goal from ball exit)
+        // 10. Calculate resultant horizontal speed toward goal
+        // Robot's radial velocity component (toward goal from ball exit) - full transfer
         double dotProduct = rVelX * dxBall + rVelY * dyBall;
         double vRobotRadial = dotProduct / distBallToGoal;
 
@@ -903,7 +937,7 @@ public class ShooterSolver {
             return false;
         }
 
-        // 10. Launch direction (from ball exit to goal)
+        // 11. Launch direction (from ball exit to goal)
         state.launchDirectionX = dxBall / distBallToGoal;
         state.launchDirectionY = dyBall / distBallToGoal;
         state.turretValid = true;
@@ -1030,6 +1064,21 @@ public class ShooterSolver {
      */
     private static double computeBallExitHorizontalOffset(double thetaH) {
         return R_COMBINED * (1 - Math.cos(thetaH));
+    }
+
+    /**
+     * Computes the tangential velocity transfer coefficient based on hood angle.
+     * 
+     * Higher hood angles = longer contact time = better tangential transfer. Radial velocity
+     * (toward/away from goal) always transfers at 100%.
+     * 
+     * @param thetaH Hood angle in radians
+     * @return Transfer coefficient (0 to 1, typically 0.75-1.0)
+     */
+    private static double computeTangentialTransfer(double thetaH) {
+        double k = K_TAN_BASE + K_TAN_SLOPE * thetaH;
+        // Clamp to valid range [0, 1]
+        return clamp(k, 0.0, 1.0);
     }
 
     // =========================================================================
