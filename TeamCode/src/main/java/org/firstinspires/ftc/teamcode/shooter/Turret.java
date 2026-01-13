@@ -2,13 +2,9 @@ package org.firstinspires.ftc.teamcode.shooter;
 
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.control.PIDFController;
-import com.pedropathing.ivy.CommandBuilder;
-import com.pedropathing.ivy.commands.Commands;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-
-import org.firstinspires.ftc.teamcode.robot.Constants;
 
 import smile.interpolation.LinearInterpolation;
 
@@ -17,11 +13,17 @@ public class Turret {
 
     public static double kP = 0, kD = 0, kF = 0; //TODO: Tune
     PIDFController turretPIDF = new PIDFController(new PIDFCoefficients(kP, 0, kD, kF));
-    boolean activated = false;
-    double targetTicks = 0;
+    private boolean activated = false;
+    private double targetTicks = 0;
 
-    double[] angleValues = new double[] {Constants.MIN_TURRET_ANGLE, Constants.MAX_TURRET_ANGLE};
-    double[] tickValues = new double[] {Constants.MIN_TURRET_TICKS, Constants.MAX_TURRET_TICKS};
+    public static double MIN_TURRET_ANGLE = Math.toRadians(-180);
+    public static double MAX_TURRET_ANGLE = Math.toRadians(180);
+
+    public static double MIN_TURRET_TICKS = -1000; //TODO: TUNE
+    public static double MAX_TURRET_TICKS = 1000; //TODO: TUNE
+
+    double[] angleValues = new double[] {MIN_TURRET_ANGLE, MAX_TURRET_ANGLE};
+    double[] tickValues = new double[] {MIN_TURRET_TICKS, MAX_TURRET_TICKS};
 
     LinearInterpolation angleToTicks = new LinearInterpolation(angleValues, tickValues);
     LinearInterpolation ticksToAngle = new LinearInterpolation(tickValues, angleValues);
@@ -33,6 +35,7 @@ public class Turret {
 
     private void reset() {
         turretMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        turretMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
     public void setPower(double power) {
@@ -51,11 +54,15 @@ public class Turret {
         return ticksToAngle.interpolate(currentTicks);
     }
 
+    public double getTargetAngle() {
+        return ticksToAngle.interpolate(targetTicks);
+    }
+
     private void setTargetTicks(double ticks) {
         this.targetTicks = ticks;
     }
 
-    public void setAngle(double radians) {
+    public void setTurretAngle(double radians) {
         setTargetTicks(
             angleToTicks.interpolate(radians)
         );
@@ -80,7 +87,7 @@ public class Turret {
     public void update() {
         if (activated) {
             double currentTicks = getCurrentPositionTicks();
-            turretPIDF.updatePosition(targetTicks);
+            turretPIDF.updatePosition(currentTicks);
             turretPIDF.setTargetPosition(targetTicks);
             double power = turretPIDF.run();
             setPower(power);

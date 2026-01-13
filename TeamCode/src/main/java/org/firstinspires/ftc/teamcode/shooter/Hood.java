@@ -3,21 +3,23 @@ package org.firstinspires.ftc.teamcode.shooter;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.robot.Constants;
+import org.firstinspires.ftc.teamcode.shooter.math.ShooterSolver;
 
 import smile.interpolation.LinearInterpolation;
 
 public class Hood {
     private Servo hoodServo;
-    boolean activated = false;
+
+    private double targetHoodAngle;
 
     public Hood(HardwareMap hardwareMap) {
         hoodServo = hardwareMap.get(Servo.class, "Hood Servo");
     }
 
     private double[] servoPositions = new double[] {0, 1}; //TODO: actually tune
-    private double[] hoodAngles = new double[] {Constants.MIN_HOOD_ANGLE, Constants.MAX_HOOD_ANGLE};
-    private double[] launchAngles = new double[] {Constants.MAX_LAUNCH_ANGLE, Constants.MIN_LAUNCH_ANGLE};
+    private double[] hoodAngles = new double[] {ShooterSolver.getMinHoodAngle(), ShooterSolver.getMaxHoodAngle()};
+    private double[] launchAngles = new double[] {ShooterSolver.hoodAngleToLaunchAngle(ShooterSolver.getMinHoodAngle()),
+            ShooterSolver.hoodAngleToLaunchAngle(ShooterSolver.getMaxHoodAngle())};
 
     LinearInterpolation hoodAngleToServo = new LinearInterpolation(hoodAngles, servoPositions);
     LinearInterpolation servoToHoodAngle = new LinearInterpolation(servoPositions, hoodAngles);
@@ -26,7 +28,16 @@ public class Hood {
     LinearInterpolation servoToLaunchAngle = new LinearInterpolation(servoPositions, launchAngles);
 
     private void setTargetPosition(double position) {
+        targetHoodAngle = servoToHoodAngle.interpolate(position);
         hoodServo.setPosition(position);
+    }
+
+    public double getTargetHoodAngle() {
+        return targetHoodAngle;
+    }
+
+    public double getTargetLaunchAngle() {
+        return ShooterSolver.hoodAngleToLaunchAngle(targetHoodAngle);
     }
 
     private double getCurrentPosition() {
@@ -46,11 +57,11 @@ public class Hood {
         );
     }
 
-    public double getLaunchAngle() {
+    public double getCurrentLaunchAngle() {
        return servoToLaunchAngle.interpolate(getCurrentPosition());
     }
 
-    public double getHoodAngle() {
+    public double getCurrentHoodAngle() {
         return servoToHoodAngle.interpolate(getCurrentPosition());
     }
 }

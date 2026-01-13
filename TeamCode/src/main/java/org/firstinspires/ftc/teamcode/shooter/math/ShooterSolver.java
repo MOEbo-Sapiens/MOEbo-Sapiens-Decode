@@ -96,11 +96,22 @@ public class ShooterSolver {
      */
     private static final double FLYWHEEL_HEIGHT = 12.0;
 
-    /** Angle at which ball first contacts flywheel (radians) - negative means below horizontal */
+    /** Angle at which ball first contacts flywheel (radians) - negative means below horizontal
+     *  TODO: Measure actual value
+     */
+
     private static final double THETA_FIRST_CONTACT = Math.toRadians(-18.241);
 
     /** Minimum hood angle (radians) */
     private static final double MIN_HOOD_ANGLE = Math.toRadians(40);
+
+    public static double getMinHoodAngle() {
+        return MIN_HOOD_ANGLE;
+    }
+
+    public static double getMaxHoodAngle() {
+        return MAX_HOOD_ANGLE;
+    }
 
     /** Maximum hood angle (radians) */
     private static final double MAX_HOOD_ANGLE = Math.toRadians(80);
@@ -117,7 +128,8 @@ public class ShooterSolver {
     private static final double T_INIT = 0.05; // TODO: Measure actual value
 
     /** Height of goal (inches) */
-    private static final double GOAL_HEIGHT = 24.0; // TODO: Set actual value
+    private static final double GOAL_HEIGHT = 38.75; // TODO: Set actual value
+
 
     // =========================================================================
     // TANGENTIAL VELOCITY TRANSFER CONSTANTS
@@ -134,6 +146,7 @@ public class ShooterSolver {
      * Example: With defaults below: - At hood = 40° (0.70 rad): K = 0.55 + 0.29 * 0.70 ≈ 0.75 - At
      * hood = 80° (1.40 rad): K = 0.55 + 0.29 * 1.40 ≈ 0.96
      */
+
 
     /** Base tangential transfer coefficient (at θ_hood = 0). TODO: Calibrate */
     private static final double K_TAN_BASE = 0.55;
@@ -997,7 +1010,7 @@ public class ShooterSolver {
     // PHYSICS HELPER METHODS
     // =========================================================================
 
-    private static double hoodAngleToLaunchAngle(double hoodAngle) {
+    public static double hoodAngleToLaunchAngle(double hoodAngle) {
         return LAUNCH_ANGLE_OFFSET - hoodAngle;
     }
 
@@ -1044,7 +1057,7 @@ public class ShooterSolver {
         // Fallback if interpolation not initialized (empty calibration data)
         if (lerp == null) {
             // Return a reasonable default - this should be replaced with actual calibration
-            return 50.0 + distance; // Placeholder
+            return 50.0 + distance; // TODO: find a default for close and far, though should never be needed
         }
 
         return lerp.interpolate(distance);

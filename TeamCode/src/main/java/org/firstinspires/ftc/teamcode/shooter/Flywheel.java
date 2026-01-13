@@ -1,47 +1,63 @@
 package org.firstinspires.ftc.teamcode.shooter;
 
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-
-import smile.interpolation.BilinearInterpolation;
-import smile.interpolation.Interpolation2D;
 
 public class Flywheel {
     private DcMotorEx shooterMotorL;
     private DcMotorEx shooterMotorR;
 
+    public static final double TICKS_PER_REV = 28;
+
     public static double kS = 0.08, kV = 0.00039, kP = 0.01; //TODO: TUNE VALUES, STOLEN FROM BARON
 
     private double target = 0;
-    boolean activated = false;
-
-    private double[] xValues = new double[3];
-    private double[] yValues = new double[3];
-    private double[][] closeVelocities = new double[][]{
-            new double[3],
-            new double[3],
-            new double[3]
-    };
-
-
-    Interpolation2D closeVelocitiesInterpolation = new BilinearInterpolation(xValues, yValues, closeVelocities);
+    private boolean activated = false;
 
     public Flywheel(HardwareMap hardwareMap) {
         shooterMotorL = hardwareMap.get(DcMotorEx.class, "Shooter Motor L");
         shooterMotorR = hardwareMap.get(DcMotorEx.class, "Shooter Motor R");
+
+        shooterMotorL.setDirection(DcMotorSimple.Direction.REVERSE);
+        shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
     }
 
 
-    public double getCurrentVelocity() {
+    public double getCurrentVelocityInTicks() {
         return shooterMotorR.getVelocity();
     }
 
-    public void setTarget(double target) {
+    public double getCurrentVelocityInRPS() {
+        return getCurrentVelocityInTicks() / TICKS_PER_REV;
+    }
+
+    public double getCurrentAngularVelocity() {
+        return getCurrentVelocityInRPS();
+    }
+
+    public void setTargetVelInTicks(double target) {
         this.target = target;
     }
 
-    public double getTarget() {
+    public void setTargetAngularVelocity(double targetRPS) {
+        setTargetVelInTicks(targetRPS * TICKS_PER_REV);
+    }
+
+    public void setTargetRPS(double targetRPS) {
+        setTargetVelInTicks(targetRPS * TICKS_PER_REV);
+    }
+
+    public double getTargetInTicks() {
         return target;
+    }
+
+    public double getTargetRPS() {
+        return getTargetInTicks() / TICKS_PER_REV;
+    }
+
+    public double getTargetAngularVelocity() {
+        return getTargetRPS();
     }
 
     public void setPower(double power) {
@@ -49,12 +65,12 @@ public class Flywheel {
         shooterMotorR.setPower(power);
     }
 
-    public void off() {
+    public void deactivate() {
        activated = false;
        setPower(0);
     }
 
-    public void on() {
+    public void activate() {
         activated = true;
     }
 
@@ -67,7 +83,7 @@ public class Flywheel {
 
     public void update() {
         if (activated) {
-            setPower((kV * getTarget()) + (kP * (getTarget() - getCurrentVelocity())) + kS);
+            setPower((kV * getTargetInTicks()) + (kP * (getTargetInTicks() - getCurrentVelocityInTicks())) + kS);
         }
     }
 

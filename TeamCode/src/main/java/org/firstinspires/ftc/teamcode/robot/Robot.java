@@ -1,13 +1,20 @@
 package org.firstinspires.ftc.teamcode.robot;
 
+import static com.pedropathing.ivy.Scheduler.schedule;
+import static com.pedropathing.ivy.commands.Commands.infinite;
+import static com.pedropathing.ivy.groups.Groups.parallel;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ivy.Scheduler;
+import com.pedropathing.ivy.commands.Commands;
+import com.pedropathing.ivy.groups.Groups;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.drivetrains.Drivetrain;
 import org.firstinspires.ftc.teamcode.pedroPathing.PedroConstants;
+import org.firstinspires.ftc.teamcode.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.states.State;
 import org.firstinspires.ftc.teamcode.vision.LimelightManager;
 import org.firstinspires.ftc.teamcode.vision.Pipelines;
@@ -17,9 +24,9 @@ import org.firstinspires.ftc.teamcode.vision.VisionResult;
 public class Robot {
 
     private State currentState;
-    private final HardwareMap hardwareMap;
 
     Intake intake;
+    Shooter shooter;
 
     Follower follower;
 
@@ -34,7 +41,9 @@ public class Robot {
 
         this.gamepad1 = gamepad1;
         this.gamepad2 = gamepad2;
-        this.hardwareMap = hardwareMap;
+
+        intake = new Intake(hardwareMap);
+        shooter = new Shooter(hardwareMap, Follower);
 
         follower = PedroConstants.createFollower(hardwareMap);
 
@@ -45,13 +54,27 @@ public class Robot {
         setPipeline(Pipelines.APRIL_TAG);
     }
 
-    public void execute() {
+    public void init() {
+        schedule(
+            infinite(this::updateDrive),
+            infinite(this::limelightProcess),
+            infinite(this::executeCurrentState),
+            infinite(this::updateTelemetry)
+        );
+    }
+
+    public void updateTelemetry() {
+        telemetry.addData("Drivetrain:", drivetrainName());
+    }
+
+    public void limelightProcess() {
         telemetry.addData("State:", getCurrentState().name());
         telemetry.addData("Pipeline:", limelightManager.getCurrentPipelineName());
-        currentState.execute(this);
         limelightManager.process(this);
-        Scheduler.execute();
-        telemetry.update();
+    }
+
+    public void executeCurrentState() {
+        currentState.execute(this);
     }
 
 
