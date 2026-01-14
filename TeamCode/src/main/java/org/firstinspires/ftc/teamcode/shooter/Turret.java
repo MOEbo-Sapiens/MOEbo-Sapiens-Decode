@@ -32,7 +32,7 @@ public class Turret {
     LinearInterpolation ticksToAngle = new LinearInterpolation(tickValues, angleValues);
 
     public Turret(HardwareMap hardwareMap) {
-        this.turretMotor = hardwareMap.get(DcMotorEx.class, "Turret Motor");
+        this.turretMotor = hardwareMap.get(DcMotorEx.class, "turret");
         reset();
     }
 
