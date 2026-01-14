@@ -19,8 +19,8 @@ public class Flywheel {
     private boolean activated = false;
 
     public Flywheel(HardwareMap hardwareMap) {
-        shooterMotorL = hardwareMap.get(DcMotorEx.class, "Shooter Motor L");
-        shooterMotorR = hardwareMap.get(DcMotorEx.class, "Shooter Motor R");
+        shooterMotorL = hardwareMap.get(DcMotorEx.class, "leftFlywheel");
+        shooterMotorR = hardwareMap.get(DcMotorEx.class, "rightFlywheel");
 
         shooterMotorL.setDirection(DcMotorSimple.Direction.REVERSE);
         shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
