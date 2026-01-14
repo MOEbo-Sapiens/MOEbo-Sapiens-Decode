@@ -8,6 +8,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public class Turret {
     private DcMotor turretMotor;
+    private double cachedPower = 0;
     private final double turretMotorPower = 0.9;
     private final double kP = 0.1;
 
@@ -42,6 +43,14 @@ public class Turret {
         telemetry.addData("Current Ticks:", turretMotor.getCurrentPosition());
 
         turretMotor.setTargetPosition(angle_ticks);
-        turretMotor.setPower(turretMotorPower);
+        setPower(turretMotorPower);
+    }
+
+    private void setPower(double power) {
+        if (Math.abs(power - cachedPower) < Constants.MOTOR_POWER_THRESHOLD) {
+            return;
+        }
+        cachedPower = power;
+        turretMotor.setPower(power);
     }
 }

@@ -8,8 +8,11 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import smile.interpolation.LinearInterpolation;
 
+import org.firstinspires.ftc.teamcode.robot.Constants;
+
 public class Turret {
     DcMotorEx turretMotor;
+    private double cachedPower = 0;
 
     public static double kP = 0, kD = 0, kF = 0; //TODO: Tune
     PIDFController turretPIDF = new PIDFController(new PIDFCoefficients(kP, 0, kD, kF));
@@ -39,6 +42,10 @@ public class Turret {
     }
 
     public void setPower(double power) {
+        if (Math.abs(power - cachedPower) < Constants.MOTOR_POWER_THRESHOLD) {
+            return;
+        }
+        cachedPower = power;
         turretMotor.setPower(power);
     }
 

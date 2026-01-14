@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.shooter;
 
+import static com.pedropathing.ivy.commands.Commands.instant;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.ivy.Command;
@@ -10,6 +12,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.shooter.math.ShooterSolver;
 import org.firstinspires.ftc.teamcode.shooter.math.ShooterSolver.ShotSolution;
+import org.firstinspires.ftc.teamcode.shooter.math.ShooterSolver.TurretUpdate;
 
 public class Shooter {
 
@@ -58,9 +61,6 @@ public class Shooter {
         turret.setTurretAngle(shotSolution.turretAngle);
     }
 
-    public Command adjustShootingParameters(boolean close) {
-        return Commands.instant(() -> updateShootingParameters(close));
-    }
 
     public boolean readyToShoot() {
         return Math.abs(flywheel.getTargetInTicks() - flywheel.getCurrentVelocityInTicks()) < flywheelToleranceTicks &&
@@ -88,34 +88,25 @@ public class Shooter {
         turret.update();
     }
 
-    private void setOpenGatePosition() {
+    public void setOpenGatePosition() {
         gateServo.setPosition(openGatePosition);
     }
 
-    private void setCloseGatePosition() {
+    public void setCloseGatePosition() {
         gateServo.setPosition(closedGatePosition);
     }
 
-    // TODO: gateServo.getPosition() returns the last commanded position, not actual position.
-    // Consider using a timer-based approach or external sensor to confirm servo has reached target.
-    private boolean isGateOpen() {
-        return Math.abs(gateServo.getPosition() - openGatePosition) < 0.01;
+    public double getTurretAngle() {
+        return turret.getCurrentAngle();
     }
 
-    private boolean isGateClosed() {
-        return Math.abs(gateServo.getPosition() - closedGatePosition) < 0.01;
+    public double getFlywheelAngularVelocity() {
+        return flywheel.getCurrentAngularVelocity();
     }
 
-    public Command openGate() {
-       return Command.build()
-           .setExecute(this::setOpenGatePosition)
-           .setDone(this::isGateOpen);
+    public double getHoodAngle() {
+        return hood.getCurrentHoodAngle();
     }
 
-    public Command closeGate() {
-        return Command.build()
-            .setExecute(this::setCloseGatePosition)
-            .setDone(this::isGateClosed);
-    }
 
 }

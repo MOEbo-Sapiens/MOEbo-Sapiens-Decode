@@ -6,9 +6,12 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
+import org.firstinspires.ftc.teamcode.robot.Constants;
+
 @TeleOp
 public class MotorOpMode extends OpMode {
     private DcMotor motor;
+    private double cachedPower = 0;
 
     @Override
     public void init() {
@@ -23,9 +26,17 @@ public class MotorOpMode extends OpMode {
 
     @Override
     public void loop() {
-        motor.setPower(0.0);
+        setPower(0.0);
 
         telemetry.addData("Ticks:", motor.getCurrentPosition());
         telemetry.update();
+    }
+
+    private void setPower(double power) {
+        if (Math.abs(power - cachedPower) < Constants.MOTOR_POWER_THRESHOLD) {
+            return;
+        }
+        cachedPower = power;
+        motor.setPower(power);
     }
 }

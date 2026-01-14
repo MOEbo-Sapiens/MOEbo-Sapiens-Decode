@@ -33,8 +33,8 @@ public class PedroConstants {
         .mass(5.362); //TODO: actually weigh the robot, in kg
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
-            .forwardPodY(2.3622) //60mm
-            .strafePodX(-0.0001968) //-0.005mm
+            .forwardPodY(6.4390354331) // 163.5515 mm
+            .strafePodX(-0.0749409449) // -1.9035 mm
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)

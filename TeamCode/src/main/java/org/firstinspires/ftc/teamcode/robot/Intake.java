@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class Intake {
     private DcMotor intakeMotor;
+    private double cachedPower = 0;
 
     public Intake(HardwareMap hardwareMap) {
         intakeMotor = hardwareMap.get(DcMotor.class, "Intake Motor");
@@ -14,18 +15,10 @@ public class Intake {
     }
 
     public void setPower(double power) {
+        if (Math.abs(power - cachedPower) < Constants.MOTOR_POWER_THRESHOLD) {
+            return;
+        }
+        cachedPower = power;
         intakeMotor.setPower(power);
-    }
-
-    public void run() {
-        intakeMotor.setPower(1.0);
-    }
-
-    public void runReverse() {
-        intakeMotor.setPower(-1.0);
-    }
-
-    public void stop() {
-        intakeMotor.setPower(0.0);
     }
 }

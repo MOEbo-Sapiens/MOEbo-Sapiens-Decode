@@ -4,9 +4,12 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.teamcode.robot.Constants;
+
 public class Flywheel {
     private DcMotorEx shooterMotorL;
     private DcMotorEx shooterMotorR;
+    private double cachedPower = 0;
 
     public static final double TICKS_PER_REV = 28;
 
@@ -61,6 +64,10 @@ public class Flywheel {
     }
 
     public void setPower(double power) {
+        if (Math.abs(power - cachedPower) < Constants.MOTOR_POWER_THRESHOLD) {
+            return;
+        }
+        cachedPower = power;
         shooterMotorL.setPower(power);
         shooterMotorR.setPower(power);
     }

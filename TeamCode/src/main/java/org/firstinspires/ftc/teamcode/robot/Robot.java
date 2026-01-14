@@ -2,12 +2,16 @@ package org.firstinspires.ftc.teamcode.robot;
 
 import static com.pedropathing.ivy.Scheduler.schedule;
 import static com.pedropathing.ivy.commands.Commands.infinite;
+import static com.pedropathing.ivy.commands.Commands.instant;
 import static com.pedropathing.ivy.groups.Groups.parallel;
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.Scheduler;
 import com.pedropathing.ivy.commands.Commands;
 import com.pedropathing.ivy.groups.Groups;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -21,6 +25,8 @@ import org.firstinspires.ftc.teamcode.vision.Pipelines;
 import org.firstinspires.ftc.teamcode.vision.VisionPipeline;
 import org.firstinspires.ftc.teamcode.vision.VisionResult;
 
+import java.util.List;
+
 public class Robot {
 
     private State currentState;
@@ -33,34 +39,77 @@ public class Robot {
     private Drivetrain drivetrain;
     private LimelightManager limelightManager;
 
+
+    List<LynxModule> allHubs;
+
     Gamepad gamepad1;
     Gamepad gamepad2;
     Telemetry telemetry;
-    public Robot(HardwareMap hardwareMap, Gamepad gamepad1, Gamepad gamepad2, Telemetry telemetry) {
+    public Robot(HardwareMap hardwareMap, Gamepad gamepad1, Gamepad gamepad2, Telemetry telemetry, Pose goalPose) {
         this.telemetry = telemetry;
 
         this.gamepad1 = gamepad1;
         this.gamepad2 = gamepad2;
 
         intake = new Intake(hardwareMap);
-        shooter = new Shooter(hardwareMap, Follower);
 
         follower = PedroConstants.createFollower(hardwareMap);
+        shooter = new Shooter(hardwareMap, follower, goalPose);
 
         setDrivetrain(Drivetrains.SWERVE);
         setState(States.SHOOTING);
 
         limelightManager = new LimelightManager(hardwareMap, telemetry);
         setPipeline(Pipelines.APRIL_TAG);
+
+        allHubs = hardwareMap.getAll(LynxModule.class);
+        for (LynxModule hub : allHubs) {
+            hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+        }
     }
+
 
     public void init() {
         schedule(
-            infinite(this::updateDrive),
-            infinite(this::limelightProcess),
-            infinite(this::executeCurrentState),
-            infinite(this::updateTelemetry)
+                infinite(this::clearCaches),
+                infinite(() -> Constants.lastPose = follower.getPose()),
+                infinite(this::limelightProcess),
+                infinite(this::executeCurrentState),
+                infinite(this::updateTelemetry)
         );
+    }
+
+    public void clearCaches() {
+        for (LynxModule hub : allHubs) {
+            hub.clearBulkCache();
+        }
+    }
+
+    public Command deactivateShooter() {
+        return instant(() -> shooter.deactivate());
+    }
+
+    public Command activateShooter() {
+        return instant(() -> shooter.activate());
+    }
+
+    public Command toggleShooter() {
+        return instant(() -> shooter.toggle());
+    }
+
+    public Command setIntakePower(double power) {
+        return instant(() -> intake.setPower(power));
+    }
+
+    public Command updateShooter() {
+        return instant(() -> {
+            shooter.updateShootingParameters(follower.getPose().getY() > 52);
+            shooter.update();
+        });
+    }
+
+    public boolean readyToShoot() {
+        return shooter.readyToShoot();
     }
 
     public void updateTelemetry() {
@@ -88,12 +137,28 @@ public class Robot {
 
     public void setState(States newState) {
         State prevState = currentState;
-        currentState = newState.build(telemetry);
+        currentState = newState.build(telemetry, gamepad1, gamepad2);
         currentState.initialize(this, prevState);
+    }
+
+    public double getTurretAngleDegrees() {
+        return Math.toDegrees(shooter.getTurretAngle());
+    }
+
+    public double getHoodAngleDegrees() {
+        return Math.toDegrees(shooter.getHoodAngle());
+    }
+
+    public double getFlywheelAngularVelocity() {
+        return shooter.getFlywheelAngularVelocity();
     }
 
     public void setDrivetrain(Drivetrains drivetrain) {
        this.drivetrain = drivetrain.build(follower, telemetry);
+    }
+
+    public void setPose(Pose pose) {
+        follower.setPose(pose);
     }
 
     public void updateDrive() {
@@ -102,6 +167,14 @@ public class Robot {
 
     public void updateDrive(double speed, double rotSpeed) {
         drivetrain.update(gamepad1, speed, rotSpeed);
+    }
+
+    public Command openGate() {
+        return instant(shooter::setOpenGatePosition);
+    }
+
+    public Command closeGate() {
+        return instant(shooter::setCloseGatePosition);
     }
 
     public String drivetrainName() {

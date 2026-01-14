@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.robot;
 
+import com.qualcomm.robotcore.hardware.Gamepad;
+
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.states.IntakingState;
 import org.firstinspires.ftc.teamcode.states.ShootingState;
@@ -22,11 +24,11 @@ public enum States {
     }
 
     States() {
-        this.supplier = telemetry -> null;
+        this.supplier = (telemetry, gamepad1, gamepad2) -> null;
     }
 
-    public State build(Telemetry telemetry) {
-        State state = supplier.get(telemetry);
+    public State build(Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2) {
+        State state = supplier.get(telemetry, gamepad1, gamepad2);
         getStateEnum.put(state, this);
         return state;
     }
