@@ -13,7 +13,7 @@ public class Hood {
     private double targetHoodAngle;
 
     public Hood(HardwareMap hardwareMap) {
-        hoodServo = hardwareMap.get(Servo.class, "Hood Servo");
+        hoodServo = hardwareMap.get(Servo.class, "hood");
     }
 
     private double[] servoPositions = new double[] {0, 1}; //TODO: actually tune
