@@ -114,7 +114,7 @@ public class ShooterSolver {
     }
 
     /** Maximum hood angle (radians) */
-    private static final double MAX_HOOD_ANGLE = Math.toRadians(80);
+    private static final double MAX_HOOD_ANGLE = Math.toRadians(74);
 
     /**
      * Launch angle offset: launch_angle = LAUNCH_ANGLE_OFFSET - hood_angle

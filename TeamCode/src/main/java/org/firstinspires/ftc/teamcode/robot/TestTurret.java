@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
-public class Turret {
+public class TestTurret {
     private DcMotor turretMotor;
     private double cachedPower = 0;
     private final double turretMotorPower = 0.9;
@@ -18,7 +18,7 @@ public class Turret {
     private final int MAX_TICKS = 2151;
     Telemetry telemetry;
 
-    public Turret(HardwareMap hardwareMap, Telemetry telemetry) {
+    public TestTurret(HardwareMap hardwareMap, Telemetry telemetry) {
         this.telemetry = telemetry;
 
 //        controller = new BasicPID(new PIDCoefficients(kP, 0, 0));

@@ -1,17 +1,19 @@
 package org.firstinspires.ftc.teamcode.shooter;
 
+import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.robot.Constants;
 
+@Config
 public class Flywheel {
     private DcMotorEx shooterMotorL;
     private DcMotorEx shooterMotorR;
     private double cachedPower = 0;
-
-    public static final double TICKS_PER_REV = 28;
 
     public static double kS = 0.08, kV = 0.00039, kP = 0.01; //TODO: TUNE VALUES, STOLEN FROM BARON
 
@@ -19,48 +21,28 @@ public class Flywheel {
     private boolean activated = false;
 
     public Flywheel(HardwareMap hardwareMap) {
-        shooterMotorL = hardwareMap.get(DcMotorEx.class, "Shooter Motor L");
-        shooterMotorR = hardwareMap.get(DcMotorEx.class, "Shooter Motor R");
+        shooterMotorL = hardwareMap.get(DcMotorEx.class, "leftFlywheel");
+        shooterMotorR = hardwareMap.get(DcMotorEx.class, "rightFlywheel");
 
         shooterMotorL.setDirection(DcMotorSimple.Direction.REVERSE);
         shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
+
+        shooterMotorL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        shooterMotorR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
     }
 
 
-    public double getCurrentVelocityInTicks() {
+    public double getCurrentAngularVel() {
         return shooterMotorR.getVelocity();
     }
 
-    public double getCurrentVelocityInRPS() {
-        return getCurrentVelocityInTicks() / TICKS_PER_REV;
+    public void setTargetAngularVelocity(double target) {
+       this.target = target;
     }
 
-    public double getCurrentAngularVelocity() {
-        return getCurrentVelocityInRPS();
-    }
-
-    public void setTargetVelInTicks(double target) {
-        this.target = target;
-    }
-
-    public void setTargetAngularVelocity(double targetRPS) {
-        setTargetVelInTicks(targetRPS * TICKS_PER_REV);
-    }
-
-    public void setTargetRPS(double targetRPS) {
-        setTargetVelInTicks(targetRPS * TICKS_PER_REV);
-    }
-
-    public double getTargetInTicks() {
-        return target;
-    }
-
-    public double getTargetRPS() {
-        return getTargetInTicks() / TICKS_PER_REV;
-    }
 
     public double getTargetAngularVelocity() {
-        return getTargetRPS();
+        return target;
     }
 
     public void setPower(double power) {
@@ -90,7 +72,7 @@ public class Flywheel {
 
     public void update() {
         if (activated) {
-            setPower((kV * getTargetInTicks()) + (kP * (getTargetInTicks() - getCurrentVelocityInTicks())) + kS);
+            setPower((kV * getTargetAngularVelocity()) + (kP * (getTargetAngularVelocity() - getCurrentAngularVel())) + kS);
         }
     }
 

@@ -1,38 +1,43 @@
 package org.firstinspires.ftc.teamcode.shooter;
 
+import com.ThermalEquilibrium.homeostasis.Controllers.Feedback.BasicPID;
+import com.ThermalEquilibrium.homeostasis.Parameters.PIDCoefficients;
+import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.control.PIDFController;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.Range;
 
 import smile.interpolation.LinearInterpolation;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.robot.Constants;
 
+@Config
 public class Turret {
     DcMotorEx turretMotor;
     private double cachedPower = 0;
 
-    public static double kP = 0, kD = 0, kF = 0; //TODO: Tune
-    PIDFController turretPIDF = new PIDFController(new PIDFCoefficients(kP, 0, kD, kF));
+    public static double kP = 0.01, kD = 0.01; //TODO: tune
+    BasicPID turretPIDF = new BasicPID(new PIDCoefficients(kP, 0, kD));
     private boolean activated = false;
     private double targetTicks = 0;
 
-    public static double MIN_TURRET_ANGLE = Math.toRadians(-180);
-    public static double MAX_TURRET_ANGLE = Math.toRadians(180);
+    public static double MIN_TURRET_ANGLE = Math.toRadians(-120);
+    public static double MAX_TURRET_ANGLE = Math.toRadians(120);
 
-    public static double MIN_TURRET_TICKS = -1000; //TODO: TUNE
-    public static double MAX_TURRET_TICKS = 1000; //TODO: TUNE
-
-    double[] angleValues = new double[] {MIN_TURRET_ANGLE, MAX_TURRET_ANGLE};
-    double[] tickValues = new double[] {MIN_TURRET_TICKS, MAX_TURRET_TICKS};
+    double[] angleValues = new double[] {Math.toRadians(-90), Math.toRadians(90)};
+    double[] tickValues = new double[] {-453, 453};
 
     LinearInterpolation angleToTicks = new LinearInterpolation(angleValues, tickValues);
     LinearInterpolation ticksToAngle = new LinearInterpolation(tickValues, angleValues);
 
     public Turret(HardwareMap hardwareMap) {
-        this.turretMotor = hardwareMap.get(DcMotorEx.class, "Turret Motor");
+        this.turretMotor = hardwareMap.get(DcMotorEx.class, "turretMotor");
+        //make sure brake
+        turretMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         reset();
     }
 
@@ -49,7 +54,7 @@ public class Turret {
         turretMotor.setPower(power);
     }
 
-    private double getCurrentPositionTicks() {
+    public double getCurrentPositionTicks() {
         return turretMotor.getCurrentPosition();
     }
 
@@ -65,13 +70,18 @@ public class Turret {
         return ticksToAngle.interpolate(targetTicks);
     }
 
+    public double getTargetTicks() {return targetTicks;}
+
     private void setTargetTicks(double ticks) {
         this.targetTicks = ticks;
     }
 
     public void setTurretAngle(double radians) {
         setTargetTicks(
-            angleToTicks.interpolate(radians)
+                Range.clip(angleToTicks.interpolate(radians),
+                        angleToTicks.interpolate(MIN_TURRET_ANGLE),
+                        angleToTicks.interpolate(MAX_TURRET_ANGLE)
+                )
         );
     }
 
@@ -91,12 +101,14 @@ public class Turret {
         }
     }
 
-    public void update() {
+    public void update(Telemetry telemetry) {
+        //TODO: Comment below out after tuning
+//        BasicPID turretPIDF = new BasicPID(new PIDCoefficients(kP, 0, kD));
         if (activated) {
             double currentTicks = getCurrentPositionTicks();
-            turretPIDF.updatePosition(currentTicks);
-            turretPIDF.setTargetPosition(targetTicks);
-            double power = turretPIDF.run();
+            double power = turretPIDF.calculate(targetTicks, currentTicks);
+            telemetry.addData("error", targetTicks - currentTicks);
+            telemetry.addData("power", power);
             setPower(power);
         }
     }

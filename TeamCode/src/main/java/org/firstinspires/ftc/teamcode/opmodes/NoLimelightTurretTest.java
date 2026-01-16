@@ -3,19 +3,19 @@ package org.firstinspires.ftc.teamcode.opmodes;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.robot.Turret;
+import org.firstinspires.ftc.teamcode.robot.TestTurret;
 
 @TeleOp
 public class NoLimelightTurretTest extends LinearOpMode {
-    private Turret turret;
+    private TestTurret testTurret;
 
     @Override
     public void runOpMode() throws InterruptedException {
-        turret = new Turret(hardwareMap, telemetry);
+        testTurret = new TestTurret(hardwareMap, telemetry);
 
         waitForStart();
         while(opModeIsActive()) {
-            turret.turnToAngle(90);
+            testTurret.turnToAngle(90);
             telemetry.update();
         }
     }

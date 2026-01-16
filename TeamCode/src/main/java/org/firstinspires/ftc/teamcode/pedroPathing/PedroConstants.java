@@ -51,7 +51,7 @@ public class PedroConstants {
                 "sm2", "ss2", "se2",
                 new PIDFCoefficients(0.005, 0, 0.0, 0.0),
                 DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.FORWARD,
-                -81.38, new Pose(-6.87, 5.66),
+                -81.38, new Pose(305.86624, 311.4),
                 0, 3.3,
                 false
         );
@@ -63,7 +63,7 @@ public class PedroConstants {
                 "sm1", "ss1", "se1",
                 new PIDFCoefficients(0.005, 0.0, 0.0, 0.0),
                 DcMotorSimple.Direction.FORWARD, DcMotorSimple.Direction.FORWARD,
-                -11.0182, new Pose(6.87, 5.66),
+                -11.0182, new Pose(305.86624, -311.4),
                 0, 3.3,
                 false
         );
@@ -75,7 +75,7 @@ public class PedroConstants {
                 "sm3", "ss3", "se3",
                 new PIDFCoefficients(0.005, 0.0, 0.0, 0.0),
                 DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.FORWARD,
-                34.16, new Pose(-6.87, -5.66),
+                34.16, new Pose(-305.86624, 311.4),
                 0, 3.3,
                 false
         );
@@ -87,7 +87,7 @@ public class PedroConstants {
                 "sm0", "ss0", "se0",
                 new PIDFCoefficients(0.005, 0.0, 0.0, 0.0),
                 DcMotorSimple.Direction.FORWARD, DcMotorSimple.Direction.FORWARD,
-                -71.6727, new Pose(6.87, -5.66),
+                -71.6727, new Pose(-305.86624, -311.4),
                 0, 3.3,
                 false
         );

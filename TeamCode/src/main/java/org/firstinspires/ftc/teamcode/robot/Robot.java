@@ -37,7 +37,7 @@ public class Robot {
     Follower follower;
 
     private Drivetrain drivetrain;
-    private LimelightManager limelightManager;
+//    private LimelightManager limelightManager;
 
 
     List<LynxModule> allHubs;
@@ -57,10 +57,10 @@ public class Robot {
         shooter = new Shooter(hardwareMap, follower, goalPose);
 
         setDrivetrain(Drivetrains.SWERVE);
-        setState(States.SHOOTING);
+        setState(States.INTAKING);
 
-        limelightManager = new LimelightManager(hardwareMap, telemetry);
-        setPipeline(Pipelines.APRIL_TAG);
+//        limelightManager = new LimelightManager(hardwareMap, telemetry);
+//        setPipeline(Pipelines.APRIL_TAG);
 
         allHubs = hardwareMap.getAll(LynxModule.class);
         for (LynxModule hub : allHubs) {
@@ -72,17 +72,25 @@ public class Robot {
     public void init() {
         schedule(
                 infinite(this::clearCaches),
-                infinite(() -> Constants.lastPose = follower.getPose()),
-                infinite(this::limelightProcess),
+                infinite(this::updateFollower),
+//                infinite(this::limelightProcess),
                 infinite(this::executeCurrentState),
                 infinite(this::updateTelemetry)
         );
+    }
+
+    public void updateFollower() {
+        follower.update();
+        Constants.lastPose = follower.getPose();
+        telemetry.addData("Updated lastPose", Constants.lastPose);
     }
 
     public void clearCaches() {
         for (LynxModule hub : allHubs) {
             hub.clearBulkCache();
         }
+
+        telemetry.addData("Caches cleared", "");
     }
 
     public Command deactivateShooter() {
@@ -104,7 +112,7 @@ public class Robot {
     public Command updateShooter() {
         return instant(() -> {
             shooter.updateShootingParameters(follower.getPose().getY() > 52);
-            shooter.update();
+            shooter.update(telemetry);
         });
     }
 
@@ -114,15 +122,17 @@ public class Robot {
 
     public void updateTelemetry() {
         telemetry.addData("Drivetrain:", drivetrainName());
+        telemetry.update();
     }
 
-    public void limelightProcess() {
-        telemetry.addData("State:", getCurrentState().name());
-        telemetry.addData("Pipeline:", limelightManager.getCurrentPipelineName());
-        limelightManager.process(this);
-    }
+//    public void limelightProcess() {
+//        telemetry.addData("State:", getCurrentState().name());
+//        telemetry.addData("Pipeline:", limelightManager.getCurrentPipelineName());
+//        limelightManager.process(this);
+//    }
 
     public void executeCurrentState() {
+        telemetry.addData("Current State: ", currentState.name());
         currentState.execute(this);
     }
 
@@ -181,31 +191,31 @@ public class Robot {
         return drivetrain.name();
     }
 
-    public void setPipeline(Pipelines pipeline) {
-        limelightManager.setPipeline(pipeline);
-    }
-
-    public void cycleNextPipeline() {
-        limelightManager.cycleNext();
-    }
-
-    public void cyclePreviousPipeline() {
-        limelightManager.cyclePrevious();
-    }
-
-    public Pipelines getCurrentPipeline() {
-        return limelightManager.getCurrentPipelineEnum();
-    }
-
-    public VisionPipeline getVisionPipeline() {
-        return limelightManager.getCurrentPipeline();
-    }
-
-    public LimelightManager getLimelightManager() {
-        return limelightManager;
-    }
-
-    public VisionResult getVisionResult() {
-        return limelightManager.getResult();
-    }
+//    public void setPipeline(Pipelines pipeline) {
+//        limelightManager.setPipeline(pipeline);
+//    }
+//
+//    public void cycleNextPipeline() {
+//        limelightManager.cycleNext();
+//    }
+//
+//    public void cyclePreviousPipeline() {
+//        limelightManager.cyclePrevious();
+//    }
+//
+//    public Pipelines getCurrentPipeline() {
+//        return limelightManager.getCurrentPipelineEnum();
+//    }
+//
+//    public VisionPipeline getVisionPipeline() {
+//        return limelightManager.getCurrentPipeline();
+//    }
+//
+//    public LimelightManager getLimelightManager() {
+//        return limelightManager;
+//    }
+//
+//    public VisionResult getVisionResult() {
+//        return limelightManager.getResult();
+//    }
 }

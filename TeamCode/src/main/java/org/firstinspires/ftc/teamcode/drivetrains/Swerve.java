@@ -6,12 +6,14 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public class Swerve implements Drivetrain {
-   Telemetry telemetry;
-    private com.pedropathing.ftc.drivetrains.Swerve dt;
+    Telemetry telemetry;
+    private Follower follower;
+
+    private static boolean fieldCentric = true;
 
     public Swerve(Follower follower, Telemetry telemetry) {
-       dt = (com.pedropathing.ftc.drivetrains.Swerve) follower.getDrivetrain();
-       this.telemetry = telemetry;
+        this.follower = follower;
+        this.telemetry = telemetry;
     }
 
     @Override
@@ -21,9 +23,21 @@ public class Swerve implements Drivetrain {
 
     @Override
     public void arcade(double forward, double strafe, double rotate, double speed, double rotSpeed) {
+        //[strafe, forward] [
+        //
+        if (fieldCentric) {
+            double theta = -follower.getHeading();
+            double cos = Math.cos(theta);
+            double sin = Math.sin(theta);
+            double strafeRot = strafe * cos - forward * sin;
+            double forwardRot = strafe * sin + forward * cos;
+            strafe = strafeRot;
+            forward = forwardRot;
+        }
+
+
         //pedro arcade has forward, left, cc as positive
-        //our arcade is intended for forward, right, clockwise as positive
-        dt.arcadeDrive(forward*speed, -strafe*speed, -rotate*rotSpeed);
+        ((com.pedropathing.ftc.drivetrains.Swerve) follower.getDrivetrain()).arcadeDrive(-forward*speed, strafe*speed, -rotate*rotSpeed);
     }
 
     @Override

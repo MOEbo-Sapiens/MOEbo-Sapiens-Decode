@@ -1,18 +1,15 @@
 package org.firstinspires.ftc.teamcode.shooter;
 
-import static com.pedropathing.ivy.commands.Commands.instant;
-
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.ivy.Command;
-import com.pedropathing.ivy.commands.Commands;
 import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.opmodes.Tele;
 import org.firstinspires.ftc.teamcode.shooter.math.ShooterSolver;
 import org.firstinspires.ftc.teamcode.shooter.math.ShooterSolver.ShotSolution;
-import org.firstinspires.ftc.teamcode.shooter.math.ShooterSolver.TurretUpdate;
 
 public class Shooter {
 
@@ -38,7 +35,7 @@ public class Shooter {
         hood = new Hood(hardwareMap);
         flywheel = new Flywheel(hardwareMap);
         turret = new Turret(hardwareMap);
-        gateServo = hardwareMap.get(Servo.class, "Gate Servo");
+        gateServo = hardwareMap.get(Servo.class, "gate");
 
         this.goalPose = goalPose;
 
@@ -63,7 +60,7 @@ public class Shooter {
 
 
     public boolean readyToShoot() {
-        return Math.abs(flywheel.getTargetInTicks() - flywheel.getCurrentVelocityInTicks()) < flywheelToleranceTicks &&
+        return Math.abs(flywheel.getTargetAngularVelocity() - flywheel.getCurrentAngularVel()) < flywheelToleranceTicks &&
                 Math.abs(turret.getTargetAngle() - turret.getCurrentAngle())  < Math.toRadians(turretToleranceDegrees) &&
                 Math.abs(hood.getTargetHoodAngle() - hood.getCurrentHoodAngle()) < Math.toRadians(hoodToleranceDegrees);
     }
@@ -83,9 +80,9 @@ public class Shooter {
         turret.toggle();
     }
 
-    public void update() {
+    public void update(Telemetry telemetry) {
         flywheel.update();
-        turret.update();
+        turret.update(telemetry);
     }
 
     public void setOpenGatePosition() {
@@ -101,7 +98,7 @@ public class Shooter {
     }
 
     public double getFlywheelAngularVelocity() {
-        return flywheel.getCurrentAngularVelocity();
+        return flywheel.getCurrentAngularVel();
     }
 
     public double getHoodAngle() {

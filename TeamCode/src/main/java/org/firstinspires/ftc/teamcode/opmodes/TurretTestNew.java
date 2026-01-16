@@ -1,0 +1,65 @@
+package org.firstinspires.ftc.teamcode.opmodes;
+
+import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+
+import org.firstinspires.ftc.teamcode.shooter.Turret;
+
+import java.util.List;
+
+@TeleOp
+public class TurretTestNew extends LinearOpMode {
+    Turret turret;
+    double target = 0;
+
+    @Override
+    public void runOpMode() throws InterruptedException {
+        turret = new Turret(hardwareMap);
+        List<LynxModule> allHubs = hardwareMap.getAll(LynxModule.class);
+        for (LynxModule hub : allHubs) {
+            hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+        }
+
+        turret.activate();
+
+        waitForStart();
+
+        while (opModeIsActive()) {
+            for (LynxModule hub : allHubs) {
+                hub.clearBulkCache();
+            }
+
+            if (gamepad1.aWasPressed()) {
+                target = Math.toRadians(45);
+            }
+
+            if (gamepad1.bWasPressed()) {
+                target = Math.toRadians(90);
+            }
+
+
+            if (gamepad1.xWasPressed()) {
+                target = Math.toRadians(-45);
+            }
+
+
+            if (gamepad1.yWasPressed()) {
+                target = Math.toRadians(-90);
+            }
+
+            if (gamepad1.dpadDownWasPressed()) {
+                target = Math.toRadians(0);
+            }
+
+            turret.setTurretAngle(target);
+            turret.update(telemetry);
+
+            telemetry.addData("Current Angle", Math.toDegrees(turret.getCurrentAngle()));
+            telemetry.addData("Target Angle", Math.toDegrees(turret.getTargetAngle()));
+            telemetry.addData("\nCurrent Ticks", turret.getCurrentPositionTicks());
+            telemetry.addData("Target Ticks", turret.getTargetTicks());
+            telemetry.update();
+        }
+    }
+}
