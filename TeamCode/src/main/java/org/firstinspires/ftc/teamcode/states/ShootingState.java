@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.states;
 
+import static com.pedropathing.ivy.Scheduler.cancel;
 import static com.pedropathing.ivy.Scheduler.schedule;
 import static com.pedropathing.ivy.commands.Commands.infinite;
 import static com.pedropathing.ivy.commands.Commands.instant;
@@ -7,16 +8,24 @@ import static com.pedropathing.ivy.commands.Commands.waitMs;
 import static com.pedropathing.ivy.commands.Commands.waitUntil;
 import static com.pedropathing.ivy.groups.Groups.sequential;
 
+import com.pedropathing.ivy.Command;
+import com.pedropathing.ivy.Scheduler;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.robot.Constants;
 import org.firstinspires.ftc.teamcode.robot.Robot;
 import org.firstinspires.ftc.teamcode.robot.States;
 
 public class ShootingState implements State {
     Telemetry telemetry;
-    Gamepad gamepad1;
-    Gamepad gamepad2;
+    private Gamepad gamepad1;
+    private Gamepad gamepad2;
+
+    private Command updateShooter;
+
+    private boolean transitioningState = false;
+
     public ShootingState(Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2) {
         this.telemetry = telemetry;
         this.gamepad1 = gamepad1;
@@ -26,19 +35,19 @@ public class ShootingState implements State {
     public void initialize(Robot robot, State prevState) {
         schedule(robot.activateShooter());
         schedule(robot.openGate());
+        updateShooter = robot.updateShooter();
+        schedule(updateShooter);
+        transitioningState = false;
     }
 
     public void execute(Robot robot) {
-        schedule(robot.updateShooter());
-
-        if (gamepad1.aWasPressed()) {
+        if (gamepad1.aWasPressed() && !transitioningState && !Constants.lastOpModeWasAuto) {
+            transitioningState = true;
+            cancel(updateShooter);
             schedule(
                     sequential(
                             waitUntil(robot::readyToShoot).raceWith(infinite(() -> {
                                 telemetry.addData("Waiting to shoot...", "");
-                                telemetry.addData("Flywheel Velocity", robot.getFlywheelAngularVelocity());
-                                telemetry.addData("Hood Angle", robot.getHoodAngleDegrees());
-                                telemetry.addData("Turret Angle", robot.getTurretAngleDegrees());
                             })),
                             robot.setIntakePower(1), //TODO: make this adjust for shooting three times (eg only updating turret while shooting but also 3 shots)
                             waitMs(500),

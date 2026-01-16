@@ -20,7 +20,7 @@ public class Turret {
     DcMotorEx turretMotor;
     private double cachedPower = 0;
 
-    public static double kP = 0.01, kD = 0.01; //TODO: tune
+    public static double kP = 0.01, kD = 0.01;
     BasicPID turretPIDF = new BasicPID(new PIDCoefficients(kP, 0, kD));
     private boolean activated = false;
     private double targetTicks = 0;
@@ -33,6 +33,9 @@ public class Turret {
 
     LinearInterpolation angleToTicks = new LinearInterpolation(angleValues, tickValues);
     LinearInterpolation ticksToAngle = new LinearInterpolation(tickValues, angleValues);
+
+    public double MIN_TURRET_TICKS = angleToTicks.interpolate(MIN_TURRET_ANGLE);
+    public double MAX_TURRET_TICKS = angleToTicks.interpolate(MAX_TURRET_ANGLE);
 
     public Turret(HardwareMap hardwareMap) {
         this.turretMotor = hardwareMap.get(DcMotorEx.class, "turretMotor");
@@ -79,8 +82,8 @@ public class Turret {
     public void setTurretAngle(double radians) {
         setTargetTicks(
                 Range.clip(angleToTicks.interpolate(radians),
-                        angleToTicks.interpolate(MIN_TURRET_ANGLE),
-                        angleToTicks.interpolate(MAX_TURRET_ANGLE)
+                        MIN_TURRET_TICKS,
+                        MAX_TURRET_TICKS
                 )
         );
     }

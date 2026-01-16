@@ -3,14 +3,10 @@ package org.firstinspires.ftc.teamcode.robot;
 import static com.pedropathing.ivy.Scheduler.schedule;
 import static com.pedropathing.ivy.commands.Commands.infinite;
 import static com.pedropathing.ivy.commands.Commands.instant;
-import static com.pedropathing.ivy.groups.Groups.parallel;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.ivy.Command;
-import com.pedropathing.ivy.Scheduler;
-import com.pedropathing.ivy.commands.Commands;
-import com.pedropathing.ivy.groups.Groups;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -20,12 +16,10 @@ import org.firstinspires.ftc.teamcode.drivetrains.Drivetrain;
 import org.firstinspires.ftc.teamcode.pedroPathing.PedroConstants;
 import org.firstinspires.ftc.teamcode.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.states.State;
-import org.firstinspires.ftc.teamcode.vision.LimelightManager;
-import org.firstinspires.ftc.teamcode.vision.Pipelines;
-import org.firstinspires.ftc.teamcode.vision.VisionPipeline;
-import org.firstinspires.ftc.teamcode.vision.VisionResult;
 
+import java.util.DoubleSummaryStatistics;
 import java.util.List;
+import java.util.function.DoubleSupplier;
 
 public class Robot {
 
@@ -109,9 +103,21 @@ public class Robot {
         return instant(() -> intake.setPower(power));
     }
 
+    public Command joysticksToIntakePower(DoubleSupplier leftTrigger, DoubleSupplier rightTrigger) {
+        return infinite(() -> {
+            if (rightTrigger.getAsDouble() > 0) {
+                intake.setPower(rightTrigger.getAsDouble());
+            } else if (leftTrigger.getAsDouble() > 0) {
+                intake.setPower(-leftTrigger.getAsDouble());
+            } else {
+                intake.setPower(0);
+            }
+        });
+    }
+
     public Command updateShooter() {
-        return instant(() -> {
-            shooter.updateShootingParameters(follower.getPose().getY() > 52);
+        return infinite(() -> {
+            shooter.updateShootingSubsystems(follower.getPose(), telemetry);
             shooter.update(telemetry);
         });
     }

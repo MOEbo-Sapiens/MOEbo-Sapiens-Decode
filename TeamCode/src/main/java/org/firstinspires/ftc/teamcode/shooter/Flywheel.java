@@ -5,9 +5,12 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.robot.Constants;
+
+import java.awt.font.NumericShaper;
 
 @Config
 public class Flywheel {
@@ -72,7 +75,9 @@ public class Flywheel {
 
     public void update() {
         if (activated) {
-            setPower((kV * getTargetAngularVelocity()) + (kP * (getTargetAngularVelocity() - getCurrentAngularVel())) + kS);
+            double power =  (kV * getTargetAngularVelocity()) + (kP * (getTargetAngularVelocity() - getCurrentAngularVel())) + kS;
+            power = Range.clip(power, -1, 1);
+            setPower(power);
         }
     }
 

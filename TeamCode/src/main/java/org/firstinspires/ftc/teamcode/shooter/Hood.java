@@ -13,14 +13,12 @@ public class Hood {
 
     private double targetHoodAngle;
 
-
-
     public Hood(HardwareMap hardwareMap) {
         hoodServo = hardwareMap.get(Servo.class, "hood");
     }
 
     //goes from 0 -> 0.83
-    private double[] servoPositions = new double[] {0, 0.83}; //TODO: actually tune
+    private double[] servoPositions = new double[] {0, 0.83};
     private double[] hoodAngles = new double[] {ShooterSolver.getMinHoodAngle(), ShooterSolver.getMaxHoodAngle()};
     private double[] launchAngles = new double[] {ShooterSolver.hoodAngleToLaunchAngle(ShooterSolver.getMinHoodAngle()),
             ShooterSolver.hoodAngleToLaunchAngle(ShooterSolver.getMaxHoodAngle())};

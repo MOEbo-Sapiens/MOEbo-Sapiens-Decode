@@ -1,7 +1,9 @@
 package org.firstinspires.ftc.teamcode.states;
 
+import static com.pedropathing.ivy.Scheduler.cancel;
 import static com.pedropathing.ivy.Scheduler.schedule;
 
+import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.Scheduler;
 import com.pedropathing.ivy.bindings.Binding;
 import com.pedropathing.ivy.bindings.Bindings;
@@ -18,8 +20,13 @@ import org.firstinspires.ftc.teamcode.robot.States;
 public class IntakingState implements State {
 
     Telemetry telemetry;
-    Gamepad gamepad1;
-    Gamepad gamepad2;
+    private Gamepad gamepad1;
+    private Gamepad gamepad2;
+
+    private Command joystickToIntake;
+
+    private boolean transitioning = false;
+
     public IntakingState(Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2) {
         this.telemetry = telemetry;
         this.gamepad1 = gamepad1;
@@ -29,22 +36,24 @@ public class IntakingState implements State {
     public void initialize(Robot robot, State prevState) {
         schedule(robot.closeGate());
         schedule(robot.deactivateShooter());
+
+        joystickToIntake = robot.joysticksToIntakePower(
+                () -> gamepad1.left_trigger,
+                () -> gamepad1.right_trigger
+        );
+
+        schedule(joystickToIntake);
+        transitioning = false;
     }
 
     public void execute(Robot robot) {
-        if (gamepad1.aWasPressed() && !Constants.lastOpModeWasAuto) {
+        if (gamepad1.aWasPressed() && !Constants.lastOpModeWasAuto && !transitioning) {
+            transitioning = true;
+            cancel(joystickToIntake);
             schedule(
                     robot.setIntakePower(0),
                     instant(() -> robot.setState(States.SHOOTING))
             );
-        }
-
-        if (gamepad1.right_trigger > 0) {
-            schedule(robot.setIntakePower(gamepad1.right_trigger));
-        }
-
-        if (gamepad1.left_trigger > 0) {
-            schedule(robot.setIntakePower(-gamepad1.left_trigger));
         }
     }
 
