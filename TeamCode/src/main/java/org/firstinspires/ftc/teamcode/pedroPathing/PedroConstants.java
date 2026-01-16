@@ -49,7 +49,7 @@ public class PedroConstants {
         return new CoaxialPod(
                 hardwareMap,
                 "sm2", "ss2", "se2",
-                new PIDFCoefficients(0.005, 0, 0.0, 0.0),
+                new PIDFCoefficients(0.005, 0, 0.0, 0.01),
                 DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.FORWARD,
                 -81.38, new Pose(305.86624, 311.4),
                 0, 3.3,
@@ -61,7 +61,7 @@ public class PedroConstants {
         return new CoaxialPod(
                 hardwareMap,
                 "sm1", "ss1", "se1",
-                new PIDFCoefficients(0.005, 0.0, 0.0, 0.0),
+                new PIDFCoefficients(0.005, 0, 0.0, 0.01),
                 DcMotorSimple.Direction.FORWARD, DcMotorSimple.Direction.FORWARD,
                 -11.0182, new Pose(305.86624, -311.4),
                 0, 3.3,
@@ -73,7 +73,7 @@ public class PedroConstants {
         return new CoaxialPod(
                 hardwareMap,
                 "sm3", "ss3", "se3",
-                new PIDFCoefficients(0.005, 0.0, 0.0, 0.0),
+                new PIDFCoefficients(0.005, 0, 0.0, 0.01),
                 DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.FORWARD,
                 34.16, new Pose(-305.86624, 311.4),
                 0, 3.3,
@@ -85,7 +85,7 @@ public class PedroConstants {
         return new CoaxialPod(
                 hardwareMap,
                 "sm0", "ss0", "se0",
-                new PIDFCoefficients(0.005, 0.0, 0.0, 0.0),
+                new PIDFCoefficients(0.005, 0, 0.0, 0.01),
                 DcMotorSimple.Direction.FORWARD, DcMotorSimple.Direction.FORWARD,
                 -71.6727, new Pose(-305.86624, -311.4),
                 0, 3.3,
