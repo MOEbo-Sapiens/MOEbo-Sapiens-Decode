@@ -3,6 +3,9 @@ package org.firstinspires.ftc.teamcode.robot;
 import static com.pedropathing.ivy.Scheduler.schedule;
 import static com.pedropathing.ivy.commands.Commands.infinite;
 import static com.pedropathing.ivy.commands.Commands.instant;
+import static com.pedropathing.ivy.commands.Commands.waitMs;
+import static com.pedropathing.ivy.commands.Commands.waitUntil;
+import static com.pedropathing.ivy.groups.Groups.sequential;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
@@ -110,12 +113,12 @@ public class Robot {
 
     public Command joysticksToIntakePower(DoubleSupplier leftTrigger, DoubleSupplier rightTrigger) {
         return infinite(() -> {
-            if (rightTrigger.getAsDouble() > 0) {
+            if (rightTrigger.getAsDouble() > 0.05) {
                 intake.setPower(rightTrigger.getAsDouble());
-            } else if (leftTrigger.getAsDouble() > 0) {
+            } else if (leftTrigger.getAsDouble() > 0.05) {
                 intake.setPower(-leftTrigger.getAsDouble());
             } else {
-                intake.setPower(0);
+                intake.setPower(0.25);
             }
         });
     }
@@ -193,6 +196,25 @@ public class Robot {
 
     public Command openGate() {
         return instant(shooter::setOpenGatePosition);
+    }
+
+    public Command shoot() {
+        return sequential(
+                openGate(),
+                setIntakePower(1),
+                waitMs(100),
+                closeGate()
+        );
+    }
+
+    public Command shootMotif() {
+        return sequential(
+                shoot(),
+                waitUntil(() -> readyToShoot()).raceWith(waitMs(1000)),
+                shoot(),
+                waitUntil(() -> readyToShoot()).raceWith(waitMs(1000)),
+                shoot()
+        );
     }
 
     public Command closeGate() {

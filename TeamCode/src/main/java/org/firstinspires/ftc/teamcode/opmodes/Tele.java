@@ -14,7 +14,7 @@ public abstract class Tele extends LinearOpMode {
     Robot robot;
     Pose goalPose = Constants.BLUE_GOAL_POSE;
     //default startPose
-    Pose startPose = new Pose(144 - (12.0459149606/2), 36, Math.toRadians(180)); //TODO: actually determine
+    Pose startPose = new Pose(48, (12.0459149606/2), Math.toRadians(90)); //TODO: actually determine
     //length of dt: 305.86624, width: 311.4
 
 

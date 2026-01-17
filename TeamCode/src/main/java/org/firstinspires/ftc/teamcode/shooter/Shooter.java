@@ -69,19 +69,19 @@ public class Shooter {
     Interpolation closeHoodAngles = new LinearInterpolation(closeDistances, closeAngles);
 
     private double[] farDistances = new double[] {
-            distance(new Pose(72, 24), Constants.BLUE_GOAL_POSE.mirror()),
-            distance(new Pose(72, 24), Constants.BLUE_GOAL_POSE.mirror()) + 0.001
+            distance(new Pose(72, 24), Constants.BLUE_GOAL_POSE),
+            distance(new Pose(84, 12), Constants.BLUE_GOAL_POSE)
     };
 
     private double[] farSpeeds = new double[] {
-           1760,
-           1760
+           1712,
+           1712
     };
 
     //hood angles
     private double[] farAngles = new double[] {
-            Math.toRadians(66.2167323833),
-            Math.toRadians(66.2167323833)
+            Math.toRadians(64.1712730547),
+            Math.toRadians(61.7132841135)
     };
 
     Interpolation farFlywheelSpeeds = new LinearInterpolation(farDistances, farSpeeds);

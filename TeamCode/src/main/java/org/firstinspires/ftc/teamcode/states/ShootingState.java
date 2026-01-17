@@ -48,9 +48,7 @@ public class ShootingState implements State {
                             waitUntil(robot::readyToShoot).raceWith(infinite(() -> {
                                 telemetry.addData("Waiting to shoot...", "");
                             })).raceWith(waitMs(5000)),
-                            robot.setIntakePower(1), //TODO: make this adjust for shooting three times (eg only updating turret while shooting but also 3 shots)
-                            waitMs(500),
-                            robot.setIntakePower(0),
+                            robot.shootMotif(),
                             instant(() -> cancel(updateShooter)),
                             instant(() -> robot.setState(States.INTAKING))
                     )
