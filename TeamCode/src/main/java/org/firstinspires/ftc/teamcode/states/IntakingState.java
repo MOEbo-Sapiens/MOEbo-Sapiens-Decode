@@ -35,7 +35,7 @@ public class IntakingState implements State {
 
     public void initialize(Robot robot, State prevState) {
         schedule(robot.closeGate());
-        schedule(robot.deactivateShooter());
+        schedule(robot.shooterIntakingPos());
 
         joystickToIntake = robot.joysticksToIntakePower(
                 () -> gamepad1.left_trigger,

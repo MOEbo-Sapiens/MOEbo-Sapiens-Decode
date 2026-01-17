@@ -13,4 +13,9 @@ public class RedAuto extends Auto{
        //pose1 = pose1.mirror();
         //etc
     }
+
+
+    protected void setColor() {
+        Constants.color = Constants.Color.RED;
+    }
 }

@@ -25,8 +25,8 @@ public class Turret {
     private boolean activated = false;
     private double targetTicks = 0;
 
-    public static double MIN_TURRET_ANGLE = Math.toRadians(-120);
-    public static double MAX_TURRET_ANGLE = Math.toRadians(120);
+    public static double MIN_TURRET_ANGLE = Math.toRadians(-70);
+    public static double MAX_TURRET_ANGLE = Math.toRadians(70);
 
     double[] angleValues = new double[] {Math.toRadians(-90), Math.toRadians(90)};
     double[] tickValues = new double[] {-453, 453};

@@ -16,6 +16,7 @@ public abstract class Auto extends LinearOpMode {
     //Pose pose1...
 
     abstract void setPoses();
+    abstract void setColor();
 
     private void createAutoCommands() {
         //TODO: schedule all desired auto commands here
@@ -23,6 +24,7 @@ public abstract class Auto extends LinearOpMode {
 
     public void initialize() {
         Constants.reset();
+        setColor();
         setPoses();
         Constants.lastOpModeWasAuto = true;
         Scheduler.reset();

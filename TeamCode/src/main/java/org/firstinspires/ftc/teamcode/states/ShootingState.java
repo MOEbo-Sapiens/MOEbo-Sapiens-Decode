@@ -35,7 +35,7 @@ public class ShootingState implements State {
     public void initialize(Robot robot, State prevState) {
         schedule(robot.activateShooter());
         schedule(robot.openGate());
-        updateShooter = robot.updateShooter();
+        updateShooter = robot.updateShootingSubsystems();
         schedule(updateShooter);
         transitioningState = false;
     }
@@ -43,15 +43,25 @@ public class ShootingState implements State {
     public void execute(Robot robot) {
         if (gamepad1.aWasPressed() && !transitioningState && !Constants.lastOpModeWasAuto) {
             transitioningState = true;
-            cancel(updateShooter);
             schedule(
                     sequential(
                             waitUntil(robot::readyToShoot).raceWith(infinite(() -> {
                                 telemetry.addData("Waiting to shoot...", "");
-                            })),
+                            })).raceWith(waitMs(5000)),
                             robot.setIntakePower(1), //TODO: make this adjust for shooting three times (eg only updating turret while shooting but also 3 shots)
                             waitMs(500),
                             robot.setIntakePower(0),
+                            instant(() -> cancel(updateShooter)),
+                            instant(() -> robot.setState(States.INTAKING))
+                    )
+            );
+        }
+
+        if (gamepad1.bWasPressed() && !transitioningState && !Constants.lastOpModeWasAuto) {
+            transitioningState = true;
+            schedule(
+                    sequential(
+                            instant(() -> cancel(updateShooter)),
                             instant(() -> robot.setState(States.INTAKING))
                     )
             );

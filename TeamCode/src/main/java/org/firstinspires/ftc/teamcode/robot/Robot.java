@@ -69,6 +69,7 @@ public class Robot {
                 infinite(this::updateFollower),
 //                infinite(this::limelightProcess),
                 infinite(this::executeCurrentState),
+                infinite(this::updateShooter),
                 infinite(this::updateTelemetry)
         );
     }
@@ -89,6 +90,10 @@ public class Robot {
 
     public Command deactivateShooter() {
         return instant(() -> shooter.deactivate());
+    }
+
+    public Command shooterIntakingPos() {
+        return instant(() -> shooter.intakingPos());
     }
 
     public Command activateShooter() {
@@ -115,11 +120,12 @@ public class Robot {
         });
     }
 
-    public Command updateShooter() {
-        return infinite(() -> {
-            shooter.updateShootingSubsystems(follower.getPose(), telemetry);
-            shooter.update(telemetry);
-        });
+    public void updateShooter() {
+        shooter.update(telemetry);
+    }
+
+    public Command updateShootingSubsystems() {
+        return infinite(() -> shooter.updateShootingSubsystems(follower.getPose(), telemetry));
     }
 
     public boolean readyToShoot() {

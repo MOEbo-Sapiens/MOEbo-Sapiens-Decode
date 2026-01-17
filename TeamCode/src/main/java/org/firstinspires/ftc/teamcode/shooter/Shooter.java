@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.robot.Constants;
 import org.firstinspires.ftc.teamcode.shooter.math.QuadraticInterpolation;
+import org.firstinspires.ftc.teamcode.shooter.math.ShooterSolver;
 import org.firstinspires.ftc.teamcode.util.MathHelpers;
 
 import smile.interpolation.Interpolation;
@@ -144,6 +145,7 @@ public class Shooter {
         telemetry.addData("flywheelSpeed", flywheelSpeed);
         telemetry.addData("hoodAngle", Math.toDegrees(hoodAngle));
         telemetry.addData("Turret Angle", Math.toDegrees(turretAngle));
+        telemetry.addData("Goal Pose", goalPose);
 
         flywheel.setTargetAngularVelocity(flywheelSpeed);
         hood.setHoodAngle(hoodAngle);
@@ -174,6 +176,12 @@ public class Shooter {
     public void activate() {
         flywheel.activate();
         turret.activate();
+    }
+
+    public void intakingPos() {
+        flywheel.deactivate();
+        turret.setTurretAngle(Math.toRadians(0));
+        hood.setHoodAngle(ShooterSolver.getMinHoodAngle());
     }
 
     public void deactivate() {

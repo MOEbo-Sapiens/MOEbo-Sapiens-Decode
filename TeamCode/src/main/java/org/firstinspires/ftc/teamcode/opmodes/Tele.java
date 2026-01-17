@@ -14,18 +14,24 @@ public abstract class Tele extends LinearOpMode {
     Robot robot;
     Pose goalPose = Constants.BLUE_GOAL_POSE;
     //default startPose
-    Pose startPose = new Pose(0, 0, Math.toRadians(0)); //TODO: actually determine
+    Pose startPose = new Pose(144 - (12.0459149606/2), 36, Math.toRadians(180)); //TODO: actually determine
+    //length of dt: 305.86624, width: 311.4
+
 
     public void initialize() {
         setPoses();
         Scheduler.reset();
 
         if (!Constants.lastOpModeWasAuto) {
+            Constants.reset();
             robot = new Robot(hardwareMap, gamepad1, gamepad2, telemetry, goalPose);
             robot.setPose(startPose);
         } else {
             robot = Constants.robot;
         }
+
+        setColor();
+
        Constants.lastOpModeWasAuto = false;
 
         robot.init();
@@ -35,6 +41,8 @@ public abstract class Tele extends LinearOpMode {
     }
 
     abstract void setPoses();
+
+    abstract void setColor();
 
     public void runOpMode() throws InterruptedException {
         initialize();
