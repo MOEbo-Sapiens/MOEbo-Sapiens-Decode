@@ -92,8 +92,8 @@ public class Shooter {
     public static double hoodToleranceDegrees = 2; //TODO: adjust as needed
 
 
-    public static double openGatePosition = 0.8; //TODO: Tune
-    public static double closedGatePosition = 0.3; //TODO: Tune
+    public static double openGatePosition = 0.3; //TODO: Tune
+    public static double closedGatePosition = 0.13; //TODO: Tune
 
     Hood hood;
     Flywheel flywheel;
