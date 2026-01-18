@@ -118,7 +118,7 @@ public class Robot {
             } else if (leftTrigger.getAsDouble() > 0.05) {
                 intake.setPower(-leftTrigger.getAsDouble());
             } else {
-                intake.setPower(0.25);
+                intake.setPower(0.4);
             }
         });
     }
@@ -203,7 +203,8 @@ public class Robot {
                 openGate(),
                 setIntakePower(1),
                 waitMs(100),
-                closeGate()
+                closeGate(),
+                waitMs(100)
         );
     }
 

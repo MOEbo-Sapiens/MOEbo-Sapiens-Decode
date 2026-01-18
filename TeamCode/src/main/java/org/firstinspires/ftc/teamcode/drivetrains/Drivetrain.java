@@ -12,11 +12,11 @@ public interface Drivetrain {
     void update(Gamepad gamepad1, double speed, double rotSpeed);
 
 
-    default void arcade (double forward, double strafe, double rotate) {
-        arcade(forward, strafe, rotate, 1.0, 1.0);
+    default void arcade (double forward, double strafe, double rotateX, double rotateY) {
+        arcade(forward, strafe, rotateX, rotateY, 1.0, 1.0);
     }
 
-    void arcade(double forward, double strafe, double rotate, double speed, double rotSpeed);
+    void arcade(double forward, double strafe, double rotateX, double rotateY, double speed, double rotSpeed);
 
     String name();
 }

@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.drivetrains;
 
 import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.hardware.Gamepad;
-import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
@@ -20,9 +19,9 @@ public class AngleMecanum extends Mecanum{
     }
 
     @Override
-    public void arcade(double forward, double strafe, double rotate, double speed, double rotSpeed) {
+    public void arcade(double forward, double strafe, double rotateX, double rotateY, double speed, double rotSpeed) {
         //TODO:    implement
-        super.arcade(forward, strafe, rotate, speed, rotSpeed);
+        super.arcade(forward, strafe, rotateX, rotateY, speed, rotSpeed);
     }
 
     @Override

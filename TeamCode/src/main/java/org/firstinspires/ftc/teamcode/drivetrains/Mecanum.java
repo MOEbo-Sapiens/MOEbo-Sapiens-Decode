@@ -16,17 +16,17 @@ public class Mecanum implements Drivetrain {
 
     @Override
     public void update(Gamepad gamepad, double speed, double rotSpeed) {
-        arcade(-gamepad.left_stick_y, gamepad.left_stick_x*1.1, gamepad.right_stick_x, speed, rotSpeed);
+        arcade(-gamepad.left_stick_y, gamepad.left_stick_x*1.1, gamepad.right_stick_x, -gamepad.right_stick_y, speed, rotSpeed);
     }
 
     @Override
-    public void arcade(double forward, double strafe, double rotate, double speed, double rotSpeed) {
-        rotate *= rotSpeed;
-        double denominator = Math.max(Math.abs(forward) + Math.abs(strafe) + Math.abs(rotate), 1);
-        double frontLeftPower = (forward + strafe + rotate) / denominator;
-        double backLeftPower = (forward - strafe + rotate) / denominator;
-        double frontRightPower = (forward - strafe - rotate) / denominator;
-        double backRightPower = (forward + strafe - rotate) / denominator;
+    public void arcade(double forward, double strafe, double rotateX,double rotateY, double speed, double rotSpeed) {
+        rotateX *= rotSpeed;
+        double denominator = Math.max(Math.abs(forward) + Math.abs(strafe) + Math.abs(rotateX), 1);
+        double frontLeftPower = (forward + strafe + rotateX) / denominator;
+        double backLeftPower = (forward - strafe + rotateX) / denominator;
+        double frontRightPower = (forward - strafe - rotateX) / denominator;
+        double backRightPower = (forward + strafe - rotateX) / denominator;
 
         //pedro impl for run drive sets in this order:
         //motors = Arrays.asList(leftFront, leftRear, rightFront, rightRear);

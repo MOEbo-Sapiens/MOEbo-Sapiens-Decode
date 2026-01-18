@@ -23,6 +23,11 @@ import com.pedropathing.telemetry.SelectableOpMode;
 import com.pedropathing.util.*;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.AnalogInput;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,6 +77,9 @@ public class Tuning extends SelectableOpMode {
                 p.add("Line", Line::new);
                 p.add("Triangle", Triangle::new);
                 p.add("Circle", Circle::new);
+            });
+            s.folder("Pod Tuning", p -> {
+                p.add("Auto Pod PDF Tuner", PodPDFAutoTuner::new);
             });
         });
     }
@@ -1351,5 +1359,1089 @@ class Drawing {
      */
     public static void sendPacket() {
         panelsField.update();
+    }
+}
+
+/**
+ * PodPDFAutoTuner - Automatic swerve pod PDF (no I) tuner.
+ *
+ * This OpMode automatically tunes the P, D, and F coefficients for each swerve pod's
+ * angle control servo. It runs through multiple phases sequentially:
+ *
+ * Phase 0: Encoder Voltage Calibration - Finds actual min/max voltages for each encoder
+ * Phase 1: Feedforward (F) Tuning - Measures static friction threshold
+ * Phase 2: P Tuning - Finds optimal proportional gain via step response
+ * Phase 3: D Tuning - Finds optimal derivative gain to minimize overshoot
+ * Phase 4: Validation - Verifies tuned values with test pattern
+ * Phase 5: Results - Displays final values in copy-paste format
+ *
+ * SAFETY: Maximum servo power is limited. Press B at any time to abort.
+ *
+ * @author MOEbo Sapiens
+ * @version 1.0
+ */
+class PodPDFAutoTuner extends OpMode {
+
+    // ==================== CONFIGURATION ====================
+    // Pod hardware names (must match PedroConstants)
+    private static final String[] POD_NAMES = {"LF", "RF", "LB", "RB"};
+    private static final String[] MOTOR_NAMES = {"sm2", "sm1", "sm3", "sm0"};
+    private static final String[] SERVO_NAMES = {"ss2", "ss1", "ss3", "ss0"};
+    private static final String[] ENCODER_NAMES = {"se2", "se1", "se3", "se0"};
+
+    // Safety limits
+    private static final double MAX_SERVO_POWER = 0.65;  // Never exceed this
+    private static final double PHASE_TIMEOUT = 45.0;    // Max seconds per pod per phase
+
+    // Encoder calibration settings
+    private static final double ENCODER_CAL_POWER = 0.20;  // Slow spin for calibration
+    private static final double ENCODER_CAL_DURATION = 5.0; // Seconds per pod (multiple rotations)
+
+    // Feedforward tuning settings
+    private static final double FF_RAMP_INCREMENT = 0.004;  // Power increment per step
+    private static final double FF_RAMP_INTERVAL = 0.04;    // Seconds between increments
+    private static final double FF_MOVEMENT_THRESHOLD = 0.4; // Degrees change to detect movement
+    private static final double FF_SEARCH_RANGE = 0.25;     // Search ±25% around initial estimate
+    private static final int FF_SEARCH_STEPS = 7;           // Number of F values to test
+
+    // P tuning settings
+    private static final double P_START = 0.001;
+    private static final double P_END = 0.025;
+    private static final double P_INCREMENT = 0.001;
+    private static final double STEP_SIZE = 90.0;           // Step response angle
+    private static final double STEP_TIMEOUT = 2.5;         // Max seconds per step test
+    private static final double SETTLE_THRESHOLD = 2.0;     // Degrees for "settled"
+    private static final double SETTLE_TIME_REQUIRED = 0.3; // Seconds within threshold
+
+    // D tuning settings
+    private static final double D_MAX_RATIO = 0.4;          // Max D as ratio of optimal P
+    private static final int D_SEARCH_STEPS = 12;           // Number of D values to test
+
+    // Validation settings
+    private static final double[] VALIDATION_ANGLES = {45.0, 90.0, 135.0, -90.0, -45.0};
+
+    // Reasonable value ranges (for sanity checks)
+    private static final double MIN_REASONABLE_F = 0.01;
+    private static final double MAX_REASONABLE_F = 0.20;
+    private static final double MIN_REASONABLE_P = 0.001;
+    private static final double MAX_REASONABLE_P = 0.030;
+    private static final double MIN_REASONABLE_D = 0.0;
+    private static final double MAX_REASONABLE_D = 0.010;
+
+    // ==================== HARDWARE ====================
+    private AnalogInput[] encoders = new AnalogInput[4];
+    private CRServo[] servos = new CRServo[4];
+    private DcMotorEx[] motors = new DcMotorEx[4];
+
+    // ==================== RESULTS ====================
+    private double[] voltageMin = {3.3, 3.3, 3.3, 3.3};
+    private double[] voltageMax = {0.0, 0.0, 0.0, 0.0};
+    private double[] optimalF = new double[4];
+    private double[] optimalP = new double[4];
+    private double[] optimalD = new double[4];
+
+    // Performance metrics from validation
+    private double[] validationRiseTime = new double[4];
+    private double[] validationOvershoot = new double[4];
+    private double[] validationSettleTime = new double[4];
+
+    // ==================== STATE MACHINE ====================
+    private enum Phase {
+        INIT,
+        ENCODER_CAL,
+        FEEDFORWARD,
+        P_TUNING,
+        D_TUNING,
+        VALIDATION,
+        COMPLETE
+    }
+
+    private Phase phase = Phase.INIT;
+    private int currentPod = 0;
+    private boolean aborted = false;
+
+    // ==================== TIMING ====================
+    private ElapsedTime phaseTimer = new ElapsedTime();
+    private ElapsedTime loopTimer = new ElapsedTime();
+    private ElapsedTime subTimer = new ElapsedTime();
+    private double lastLoopTime = 0;
+    private double deltaTime = 0;
+
+    // ==================== ENCODER CAL STATE ====================
+    // (uses phaseTimer for duration)
+
+    // ==================== FEEDFORWARD STATE ====================
+    private enum FFSubphase { RAMP_CW, RAMP_CCW, SEARCH, DONE }
+    private FFSubphase ffSubphase = FFSubphase.RAMP_CW;
+    private double ffRampPower = 0;
+    private double ffThresholdCW = 0;
+    private double ffThresholdCCW = 0;
+    private double ffLastAngle = 0;
+    private double ffSearchValues[] = new double[FF_SEARCH_STEPS];
+    private double ffSearchScores[] = new double[FF_SEARCH_STEPS];
+    private int ffSearchIndex = 0;
+    private double ffBestF = 0;
+    private double ffBestScore = Double.MAX_VALUE;
+
+    // ==================== P TUNING STATE ====================
+    private enum PTuneSubphase { SETTLE, STEP, MEASURE, NEXT }
+    private PTuneSubphase pSubphase = PTuneSubphase.SETTLE;
+    private double testP = P_START;
+    private double pBestP = 0;
+    private double pBestScore = Double.MAX_VALUE;
+    private ArrayList<Double> pTestedValues = new ArrayList<>();
+    private ArrayList<Double> pTestedScores = new ArrayList<>();
+
+    // ==================== D TUNING STATE ====================
+    private enum DTuneSubphase { SETTLE, STEP, MEASURE, NEXT }
+    private DTuneSubphase dSubphase = DTuneSubphase.SETTLE;
+    private double testD = 0;
+    private double dBestD = 0;
+    private double dBestScore = Double.MAX_VALUE;
+    private ArrayList<Double> dTestedValues = new ArrayList<>();
+    private ArrayList<Double> dTestedScores = new ArrayList<>();
+    private int dStepCount = 0;
+
+    // ==================== VALIDATION STATE ====================
+    private enum ValSubphase { SETTLE, STEP, MEASURE, NEXT }
+    private ValSubphase valSubphase = ValSubphase.SETTLE;
+    private int valAngleIndex = 0;
+    private double valTotalRiseTime = 0;
+    private double valMaxOvershoot = 0;
+    private double valTotalSettleTime = 0;
+    private int valSuccessCount = 0;
+
+    // ==================== STEP RESPONSE MEASUREMENT ====================
+    private double stepStartAngle = 0;
+    private double stepTargetAngle = 0;
+    private double stepRiseTime = -1;
+    private double stepOvershoot = 0;
+    private double stepSettleTime = -1;
+    private double stepMaxAngleReached = 0;
+    private boolean stepReached90Percent = false;
+    private double stepSettleStartTime = -1;
+    private double stepLastError = 0;
+
+    // ==================== PID CONTROL STATE ====================
+    private double pidLastError = 0;
+    private double pidLastTime = 0;
+
+    // ==================== STATUS MESSAGES ====================
+    private String statusMessage = "";
+    private String warningMessage = "";
+
+    @Override
+    public void init() {
+        // Initialize hardware
+        boolean hardwareOk = true;
+        for (int i = 0; i < 4; i++) {
+            try {
+                motors[i] = hardwareMap.get(DcMotorEx.class, MOTOR_NAMES[i]);
+                servos[i] = hardwareMap.get(CRServo.class, SERVO_NAMES[i]);
+                encoders[i] = hardwareMap.get(AnalogInput.class, ENCODER_NAMES[i]);
+
+                // Set motors to float so they don't resist pod rotation
+                motors[i].setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+                motors[i].setPower(0);
+
+                // Stop servos initially
+                servos[i].setPower(0);
+            } catch (Exception e) {
+                hardwareOk = false;
+                warningMessage = "Hardware init failed for pod " + POD_NAMES[i] + ": " + e.getMessage();
+            }
+        }
+
+        if (!hardwareOk) {
+            statusMessage = "HARDWARE ERROR - Check connections";
+        } else {
+            statusMessage = "Ready. Press START to begin tuning.";
+        }
+
+        phase = Phase.INIT;
+        loopTimer.reset();
+    }
+
+    @Override
+    public void init_loop() {
+        telemetryM.debug("=== POD PDF AUTO-TUNER ===");
+        telemetryM.debug("");
+        telemetryM.debug("This will automatically tune P, D, and F for all 4 swerve pods.");
+        telemetryM.debug("The robot will spin each pod through various tests.");
+        telemetryM.debug("");
+        telemetryM.debug("MAKE SURE THE ROBOT IS ON BLOCKS OR WHEELS ARE OFF THE GROUND!");
+        telemetryM.debug("");
+        telemetryM.debug("Press B at any time to abort.");
+        telemetryM.debug("");
+        if (!warningMessage.isEmpty()) {
+            telemetryM.debug("WARNING: " + warningMessage);
+        }
+        telemetryM.debug("Status: " + statusMessage);
+        telemetryM.update(telemetry);
+
+        // Also update regular telemetry
+        telemetry.addLine("=== POD PDF AUTO-TUNER ===");
+        telemetry.addLine("");
+        telemetry.addLine("This will automatically tune P, D, F for all pods.");
+        telemetry.addLine("ENSURE ROBOT IS ON BLOCKS!");
+        telemetry.addLine("");
+        telemetry.addLine("Press B to abort at any time.");
+        if (!warningMessage.isEmpty()) {
+            telemetry.addLine("WARNING: " + warningMessage);
+        }
+        telemetry.addLine("Status: " + statusMessage);
+        telemetry.update();
+    }
+
+    @Override
+    public void start() {
+        phase = Phase.ENCODER_CAL;
+        currentPod = 0;
+        phaseTimer.reset();
+        loopTimer.reset();
+        statusMessage = "Starting encoder calibration...";
+    }
+
+    @Override
+    public void loop() {
+        // Calculate delta time
+        double currentTime = loopTimer.seconds();
+        deltaTime = currentTime - lastLoopTime;
+        lastLoopTime = currentTime;
+
+        // Check for abort
+        if (gamepad1.b) {
+            abortTuning("User pressed B to abort");
+            return;
+        }
+
+        // Phase timeout check
+        if (phase != Phase.INIT && phase != Phase.COMPLETE && phaseTimer.seconds() > PHASE_TIMEOUT) {
+            warningMessage = "Phase timeout for pod " + POD_NAMES[currentPod] + " - moving to next";
+            advanceToNextPod();
+        }
+
+        // Run current phase
+        switch (phase) {
+            case INIT:
+                // Shouldn't reach here after start()
+                break;
+            case ENCODER_CAL:
+                runEncoderCalibration();
+                break;
+            case FEEDFORWARD:
+                runFeedforwardTuning();
+                break;
+            case P_TUNING:
+                runPTuning();
+                break;
+            case D_TUNING:
+                runDTuning();
+                break;
+            case VALIDATION:
+                runValidation();
+                break;
+            case COMPLETE:
+                displayResults();
+                break;
+        }
+
+        // Update telemetry
+        updateTelemetry();
+    }
+
+    // ==================== PHASE 0: ENCODER CALIBRATION ====================
+
+    private void runEncoderCalibration() {
+        double elapsed = phaseTimer.seconds();
+
+        if (elapsed < ENCODER_CAL_DURATION) {
+            // Spin the servo at constant power
+            servos[currentPod].setPower(ENCODER_CAL_POWER);
+
+            // Track min/max voltage
+            double voltage = encoders[currentPod].getVoltage();
+            voltageMin[currentPod] = Math.min(voltageMin[currentPod], voltage);
+            voltageMax[currentPod] = Math.max(voltageMax[currentPod], voltage);
+
+            statusMessage = String.format("Encoder Cal %s: %.1f%% | V=[%.3f - %.3f]",
+                POD_NAMES[currentPod],
+                (elapsed / ENCODER_CAL_DURATION) * 100,
+                voltageMin[currentPod],
+                voltageMax[currentPod]);
+        } else {
+            // Stop servo
+            servos[currentPod].setPower(0);
+
+            // Validate results
+            double range = voltageMax[currentPod] - voltageMin[currentPod];
+            if (range < 2.5) {
+                warningMessage = String.format("Pod %s encoder range too small (%.2fV). Check wiring!",
+                    POD_NAMES[currentPod], range);
+            }
+
+            // Move to next pod or next phase
+            currentPod++;
+            if (currentPod >= 4) {
+                phase = Phase.FEEDFORWARD;
+                currentPod = 0;
+                resetFeedforwardState();
+            }
+            phaseTimer.reset();
+        }
+    }
+
+    // ==================== PHASE 1: FEEDFORWARD TUNING ====================
+
+    private void resetFeedforwardState() {
+        ffSubphase = FFSubphase.RAMP_CW;
+        ffRampPower = 0;
+        ffThresholdCW = 0;
+        ffThresholdCCW = 0;
+        ffLastAngle = getCurrentAngle(currentPod);
+        ffSearchIndex = 0;
+        ffBestF = 0;
+        ffBestScore = Double.MAX_VALUE;
+        subTimer.reset();
+    }
+
+    private void runFeedforwardTuning() {
+        switch (ffSubphase) {
+            case RAMP_CW:
+                runFFRampCW();
+                break;
+            case RAMP_CCW:
+                runFFRampCCW();
+                break;
+            case SEARCH:
+                runFFSearch();
+                break;
+            case DONE:
+                // Store result and move on
+                optimalF[currentPod] = ffBestF;
+                servos[currentPod].setPower(0);
+
+                // Sanity check
+                if (ffBestF < MIN_REASONABLE_F || ffBestF > MAX_REASONABLE_F) {
+                    warningMessage = String.format("Pod %s F=%.4f outside normal range [%.2f-%.2f]",
+                        POD_NAMES[currentPod], ffBestF, MIN_REASONABLE_F, MAX_REASONABLE_F);
+                }
+
+                currentPod++;
+                if (currentPod >= 4) {
+                    phase = Phase.P_TUNING;
+                    currentPod = 0;
+                    resetPTuningState();
+                } else {
+                    resetFeedforwardState();
+                }
+                phaseTimer.reset();
+                break;
+        }
+    }
+
+    private void runFFRampCW() {
+        if (subTimer.seconds() >= FF_RAMP_INTERVAL) {
+            subTimer.reset();
+
+            double currentAngle = getCurrentAngle(currentPod);
+            double angleDelta = Math.abs(normalizeAngle(currentAngle - ffLastAngle));
+
+            // Check if movement detected
+            if (angleDelta > FF_MOVEMENT_THRESHOLD && ffRampPower > 0.01) {
+                ffThresholdCW = ffRampPower;
+                ffRampPower = 0;
+                servos[currentPod].setPower(0);
+                ffSubphase = FFSubphase.RAMP_CCW;
+                ffLastAngle = getCurrentAngle(currentPod);
+                subTimer.reset();
+
+                // Small delay before reversing
+                try { Thread.sleep(200); } catch (Exception e) {}
+            } else {
+                // Increment power
+                ffRampPower = Math.min(ffRampPower + FF_RAMP_INCREMENT, MAX_SERVO_POWER);
+                servos[currentPod].setPower(ffRampPower);
+            }
+
+            ffLastAngle = currentAngle;
+        }
+
+        statusMessage = String.format("FF %s: Ramp CW power=%.3f", POD_NAMES[currentPod], ffRampPower);
+    }
+
+    private void runFFRampCCW() {
+        if (subTimer.seconds() >= FF_RAMP_INTERVAL) {
+            subTimer.reset();
+
+            double currentAngle = getCurrentAngle(currentPod);
+            double angleDelta = Math.abs(normalizeAngle(currentAngle - ffLastAngle));
+
+            // Check if movement detected
+            if (angleDelta > FF_MOVEMENT_THRESHOLD && Math.abs(ffRampPower) > 0.01) {
+                ffThresholdCCW = Math.abs(ffRampPower);
+                servos[currentPod].setPower(0);
+
+                // Calculate initial F estimate (average of thresholds)
+                double initialF = (ffThresholdCW + ffThresholdCCW) / 2.0;
+
+                // Set up search values around the estimate
+                double searchMin = initialF * (1 - FF_SEARCH_RANGE);
+                double searchMax = initialF * (1 + FF_SEARCH_RANGE);
+                for (int i = 0; i < FF_SEARCH_STEPS; i++) {
+                    ffSearchValues[i] = searchMin + (searchMax - searchMin) * i / (FF_SEARCH_STEPS - 1);
+                    ffSearchScores[i] = Double.MAX_VALUE;
+                }
+
+                ffSearchIndex = 0;
+                ffSubphase = FFSubphase.SEARCH;
+                resetStepMeasurement(currentPod, STEP_SIZE / 2); // Smaller step for F search
+                subTimer.reset();
+            } else {
+                // Increment power (negative direction)
+                ffRampPower = Math.max(ffRampPower - FF_RAMP_INCREMENT, -MAX_SERVO_POWER);
+                servos[currentPod].setPower(ffRampPower);
+            }
+
+            ffLastAngle = currentAngle;
+        }
+
+        statusMessage = String.format("FF %s: Ramp CCW power=%.3f (CW thresh=%.3f)",
+            POD_NAMES[currentPod], ffRampPower, ffThresholdCW);
+    }
+
+    private void runFFSearch() {
+        // Run a step response with current F value
+        double currentF = ffSearchValues[ffSearchIndex];
+        boolean stepDone = runStepMeasurement(currentPod, 0.005, 0, currentF); // Use minimal P for F search
+
+        if (stepDone) {
+            // Score based on steady-state error and settling time
+            double score = Math.abs(stepLastError) + stepSettleTime * 0.1;
+            if (stepSettleTime < 0) score = Double.MAX_VALUE; // Didn't settle
+
+            ffSearchScores[ffSearchIndex] = score;
+
+            if (score < ffBestScore) {
+                ffBestScore = score;
+                ffBestF = currentF;
+            }
+
+            ffSearchIndex++;
+            if (ffSearchIndex >= FF_SEARCH_STEPS) {
+                ffSubphase = FFSubphase.DONE;
+            } else {
+                resetStepMeasurement(currentPod, STEP_SIZE / 2);
+            }
+        }
+
+        statusMessage = String.format("FF %s: Search %d/%d F=%.4f (best=%.4f)",
+            POD_NAMES[currentPod], ffSearchIndex + 1, FF_SEARCH_STEPS,
+            ffSearchValues[Math.min(ffSearchIndex, FF_SEARCH_STEPS-1)], ffBestF);
+    }
+
+    // ==================== PHASE 2: P TUNING ====================
+
+    private void resetPTuningState() {
+        pSubphase = PTuneSubphase.SETTLE;
+        testP = P_START;
+        pBestP = P_START;
+        pBestScore = Double.MAX_VALUE;
+        pTestedValues.clear();
+        pTestedScores.clear();
+        subTimer.reset();
+    }
+
+    private void runPTuning() {
+        switch (pSubphase) {
+            case SETTLE:
+                // Let the pod settle before starting
+                servos[currentPod].setPower(0);
+                if (subTimer.seconds() > 0.3) {
+                    resetStepMeasurement(currentPod, STEP_SIZE);
+                    pSubphase = PTuneSubphase.STEP;
+                }
+                break;
+
+            case STEP:
+                boolean done = runStepMeasurement(currentPod, testP, 0, optimalF[currentPod]);
+                if (done) {
+                    pSubphase = PTuneSubphase.MEASURE;
+                }
+                break;
+
+            case MEASURE:
+                // Calculate score for this P value
+                // Lower is better: fast rise, low overshoot, fast settle
+                double score;
+                if (stepRiseTime < 0 || stepSettleTime < 0) {
+                    // Didn't complete properly
+                    score = Double.MAX_VALUE;
+                } else {
+                    // Score formula: prioritize settling, penalize overshoot heavily
+                    double overshootPenalty = 1 + (stepOvershoot / 10.0) * (stepOvershoot / 10.0);
+                    score = stepRiseTime * 0.3 + stepSettleTime * 0.7;
+                    score *= overshootPenalty;
+
+                    // Heavy penalty for excessive overshoot (oscillation indicator)
+                    if (stepOvershoot > 20) {
+                        score = Double.MAX_VALUE;
+                    }
+                }
+
+                pTestedValues.add(testP);
+                pTestedScores.add(score);
+
+                if (score < pBestScore) {
+                    pBestScore = score;
+                    pBestP = testP;
+                }
+
+                pSubphase = PTuneSubphase.NEXT;
+                break;
+
+            case NEXT:
+                servos[currentPod].setPower(0);
+
+                // Check if we should continue
+                testP += P_INCREMENT;
+
+                // Stop if: exceeded range, or score is getting much worse (oscillating)
+                boolean shouldStop = testP > P_END;
+                if (pTestedScores.size() >= 3) {
+                    double lastScore = pTestedScores.get(pTestedScores.size() - 1);
+                    double prevScore = pTestedScores.get(pTestedScores.size() - 2);
+                    // If last two scores are much worse than best, and trending worse, stop
+                    if (lastScore > pBestScore * 3 && lastScore > prevScore) {
+                        shouldStop = true;
+                    }
+                }
+
+                if (shouldStop) {
+                    optimalP[currentPod] = pBestP;
+
+                    // Sanity check
+                    if (pBestP < MIN_REASONABLE_P || pBestP > MAX_REASONABLE_P) {
+                        warningMessage = String.format("Pod %s P=%.4f outside normal range",
+                            POD_NAMES[currentPod], pBestP);
+                    }
+
+                    currentPod++;
+                    if (currentPod >= 4) {
+                        phase = Phase.D_TUNING;
+                        currentPod = 0;
+                        resetDTuningState();
+                    } else {
+                        resetPTuningState();
+                    }
+                    phaseTimer.reset();
+                } else {
+                    pSubphase = PTuneSubphase.SETTLE;
+                    subTimer.reset();
+                }
+                break;
+        }
+
+        statusMessage = String.format("P Tune %s: P=%.4f (best=%.4f, score=%.2f)",
+            POD_NAMES[currentPod], testP, pBestP, pBestScore);
+    }
+
+    // ==================== PHASE 3: D TUNING ====================
+
+    private void resetDTuningState() {
+        dSubphase = DTuneSubphase.SETTLE;
+        testD = 0;
+        dBestD = 0;
+        dBestScore = Double.MAX_VALUE;
+        dTestedValues.clear();
+        dTestedScores.clear();
+        dStepCount = 0;
+        subTimer.reset();
+    }
+
+    private void runDTuning() {
+        double dMax = optimalP[currentPod] * D_MAX_RATIO;
+        double dIncrement = dMax / D_SEARCH_STEPS;
+
+        switch (dSubphase) {
+            case SETTLE:
+                servos[currentPod].setPower(0);
+                if (subTimer.seconds() > 0.3) {
+                    resetStepMeasurement(currentPod, STEP_SIZE);
+                    dSubphase = DTuneSubphase.STEP;
+                }
+                break;
+
+            case STEP:
+                boolean done = runStepMeasurement(currentPod, optimalP[currentPod], testD, optimalF[currentPod]);
+                if (done) {
+                    dSubphase = DTuneSubphase.MEASURE;
+                }
+                break;
+
+            case MEASURE:
+                // Calculate score - prioritize low overshoot more than P tuning
+                double score;
+                if (stepRiseTime < 0 || stepSettleTime < 0) {
+                    score = Double.MAX_VALUE;
+                } else {
+                    // Heavily penalize overshoot, want minimal
+                    double overshootPenalty = 1 + stepOvershoot * stepOvershoot / 25.0;
+                    score = stepSettleTime * overshootPenalty;
+
+                    // Also penalize very slow rise (too much D)
+                    if (stepRiseTime > 1.0) {
+                        score *= (1 + stepRiseTime - 1.0);
+                    }
+                }
+
+                dTestedValues.add(testD);
+                dTestedScores.add(score);
+
+                if (score < dBestScore) {
+                    dBestScore = score;
+                    dBestD = testD;
+                }
+
+                dSubphase = DTuneSubphase.NEXT;
+                break;
+
+            case NEXT:
+                servos[currentPod].setPower(0);
+                dStepCount++;
+                testD += dIncrement;
+
+                // Stop if exceeded range or response is getting sluggish
+                boolean shouldStop = dStepCount >= D_SEARCH_STEPS;
+                if (dTestedScores.size() >= 2) {
+                    double lastScore = dTestedScores.get(dTestedScores.size() - 1);
+                    // If last score is much worse, we've gone too far
+                    if (lastScore > dBestScore * 2.5 && lastScore != Double.MAX_VALUE) {
+                        shouldStop = true;
+                    }
+                }
+
+                if (shouldStop) {
+                    optimalD[currentPod] = dBestD;
+
+                    currentPod++;
+                    if (currentPod >= 4) {
+                        phase = Phase.VALIDATION;
+                        currentPod = 0;
+                        resetValidationState();
+                    } else {
+                        resetDTuningState();
+                    }
+                    phaseTimer.reset();
+                } else {
+                    dSubphase = DTuneSubphase.SETTLE;
+                    subTimer.reset();
+                }
+                break;
+        }
+
+        statusMessage = String.format("D Tune %s: D=%.5f (best=%.5f)",
+            POD_NAMES[currentPod], testD, dBestD);
+    }
+
+    // ==================== PHASE 4: VALIDATION ====================
+
+    private void resetValidationState() {
+        valSubphase = ValSubphase.SETTLE;
+        valAngleIndex = 0;
+        valTotalRiseTime = 0;
+        valMaxOvershoot = 0;
+        valTotalSettleTime = 0;
+        valSuccessCount = 0;
+        subTimer.reset();
+    }
+
+    private void runValidation() {
+        switch (valSubphase) {
+            case SETTLE:
+                servos[currentPod].setPower(0);
+                if (subTimer.seconds() > 0.3) {
+                    resetStepMeasurement(currentPod, VALIDATION_ANGLES[valAngleIndex]);
+                    valSubphase = ValSubphase.STEP;
+                }
+                break;
+
+            case STEP:
+                boolean done = runStepMeasurement(currentPod,
+                    optimalP[currentPod], optimalD[currentPod], optimalF[currentPod]);
+                if (done) {
+                    valSubphase = ValSubphase.MEASURE;
+                }
+                break;
+
+            case MEASURE:
+                if (stepRiseTime > 0 && stepSettleTime > 0) {
+                    valTotalRiseTime += stepRiseTime;
+                    valMaxOvershoot = Math.max(valMaxOvershoot, stepOvershoot);
+                    valTotalSettleTime += stepSettleTime;
+                    valSuccessCount++;
+                }
+                valSubphase = ValSubphase.NEXT;
+                break;
+
+            case NEXT:
+                servos[currentPod].setPower(0);
+                valAngleIndex++;
+
+                if (valAngleIndex >= VALIDATION_ANGLES.length) {
+                    // Calculate averages
+                    if (valSuccessCount > 0) {
+                        validationRiseTime[currentPod] = valTotalRiseTime / valSuccessCount;
+                        validationOvershoot[currentPod] = valMaxOvershoot;
+                        validationSettleTime[currentPod] = valTotalSettleTime / valSuccessCount;
+                    }
+
+                    currentPod++;
+                    if (currentPod >= 4) {
+                        phase = Phase.COMPLETE;
+                        stopAllServos();
+                    } else {
+                        resetValidationState();
+                    }
+                    phaseTimer.reset();
+                } else {
+                    valSubphase = ValSubphase.SETTLE;
+                    subTimer.reset();
+                }
+                break;
+        }
+
+        statusMessage = String.format("Validate %s: angle %d/%d",
+            POD_NAMES[currentPod], valAngleIndex + 1, VALIDATION_ANGLES.length);
+    }
+
+    // ==================== STEP RESPONSE MEASUREMENT ====================
+
+    private void resetStepMeasurement(int pod, double stepAngle) {
+        stepStartAngle = getCurrentAngle(pod);
+        stepTargetAngle = stepStartAngle + stepAngle;
+        stepRiseTime = -1;
+        stepOvershoot = 0;
+        stepSettleTime = -1;
+        stepMaxAngleReached = stepStartAngle;
+        stepReached90Percent = false;
+        stepSettleStartTime = -1;
+        pidLastError = 0;
+        pidLastTime = loopTimer.seconds();
+        subTimer.reset();
+    }
+
+    /**
+     * Runs one iteration of step response measurement.
+     * Returns true when the measurement is complete.
+     */
+    private boolean runStepMeasurement(int pod, double kP, double kD, double kF) {
+        double currentAngle = getCurrentAngle(pod);
+        double currentTime = loopTimer.seconds();
+        double dt = currentTime - pidLastTime;
+        pidLastTime = currentTime;
+
+        // Calculate error (with proper angle wrapping)
+        double error = normalizeAngle(stepTargetAngle - currentAngle);
+
+        // Calculate derivative
+        double derivative = 0;
+        if (dt > 0.001) {
+            derivative = (error - pidLastError) / dt;
+        }
+        pidLastError = error;
+
+        // PD + F control
+        double power = kP * error + kD * derivative;
+
+        // Add feedforward if error is significant
+        if (Math.abs(error) > 0.5) {
+            power += kF * Math.signum(power);
+        }
+
+        // Clamp power
+        power = Math.max(-MAX_SERVO_POWER, Math.min(MAX_SERVO_POWER, power));
+        servos[pod].setPower(power);
+
+        // Track max angle (for overshoot calculation)
+        double distanceFromStart = Math.abs(normalizeAngle(currentAngle - stepStartAngle));
+        double targetDistance = Math.abs(normalizeAngle(stepTargetAngle - stepStartAngle));
+
+        if (distanceFromStart > stepMaxAngleReached) {
+            stepMaxAngleReached = distanceFromStart;
+        }
+
+        // Check for 90% of target reached (for rise time)
+        if (!stepReached90Percent && distanceFromStart >= targetDistance * 0.9) {
+            stepReached90Percent = true;
+            stepRiseTime = subTimer.seconds();
+        }
+
+        // Check if within settle threshold
+        if (Math.abs(error) < SETTLE_THRESHOLD) {
+            if (stepSettleStartTime < 0) {
+                stepSettleStartTime = subTimer.seconds();
+            } else if (subTimer.seconds() - stepSettleStartTime >= SETTLE_TIME_REQUIRED) {
+                // Settled!
+                stepSettleTime = subTimer.seconds();
+                stepOvershoot = Math.max(0, stepMaxAngleReached - targetDistance);
+                stepLastError = error;
+                return true;
+            }
+        } else {
+            stepSettleStartTime = -1; // Reset settle timer if we leave threshold
+        }
+
+        // Timeout
+        if (subTimer.seconds() > STEP_TIMEOUT) {
+            stepOvershoot = Math.max(0, stepMaxAngleReached - targetDistance);
+            stepLastError = error;
+            return true;
+        }
+
+        return false;
+    }
+
+    // ==================== UTILITY METHODS ====================
+
+    private double getCurrentAngle(int pod) {
+        double voltage = encoders[pod].getVoltage();
+        double range = voltageMax[pod] - voltageMin[pod];
+
+        // Handle uninitialized voltage range
+        if (range < 0.1) {
+            range = 3.3; // Default
+            voltageMin[pod] = 0;
+        }
+
+        double normalized = (voltage - voltageMin[pod]) / range;
+        normalized = Math.max(0, Math.min(1, normalized));
+        return normalized * 360.0;
+    }
+
+    private double normalizeAngle(double angle) {
+        while (angle > 180) angle -= 360;
+        while (angle < -180) angle += 360;
+        return angle;
+    }
+
+    private void stopAllServos() {
+        for (int i = 0; i < 4; i++) {
+            servos[i].setPower(0);
+        }
+    }
+
+    private void abortTuning(String reason) {
+        aborted = true;
+        stopAllServos();
+        phase = Phase.COMPLETE;
+        warningMessage = "ABORTED: " + reason;
+    }
+
+    private void advanceToNextPod() {
+        stopAllServos();
+        currentPod++;
+
+        if (currentPod >= 4) {
+            // Move to next phase
+            switch (phase) {
+                case ENCODER_CAL:
+                    phase = Phase.FEEDFORWARD;
+                    currentPod = 0;
+                    resetFeedforwardState();
+                    break;
+                case FEEDFORWARD:
+                    phase = Phase.P_TUNING;
+                    currentPod = 0;
+                    resetPTuningState();
+                    break;
+                case P_TUNING:
+                    phase = Phase.D_TUNING;
+                    currentPod = 0;
+                    resetDTuningState();
+                    break;
+                case D_TUNING:
+                    phase = Phase.VALIDATION;
+                    currentPod = 0;
+                    resetValidationState();
+                    break;
+                case VALIDATION:
+                    phase = Phase.COMPLETE;
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            // Reset state for new pod in current phase
+            switch (phase) {
+                case ENCODER_CAL:
+                    break; // No special reset needed
+                case FEEDFORWARD:
+                    resetFeedforwardState();
+                    break;
+                case P_TUNING:
+                    resetPTuningState();
+                    break;
+                case D_TUNING:
+                    resetDTuningState();
+                    break;
+                case VALIDATION:
+                    resetValidationState();
+                    break;
+                default:
+                    break;
+            }
+        }
+        phaseTimer.reset();
+    }
+
+    // ==================== RESULTS DISPLAY ====================
+
+    private void displayResults() {
+        // Results are displayed in updateTelemetry when phase == COMPLETE
+    }
+
+    // ==================== TELEMETRY ====================
+
+    private void updateTelemetry() {
+        // Panels telemetry
+        telemetryM.debug("=== POD PDF AUTO-TUNER ===");
+        telemetryM.debug("");
+
+        if (phase == Phase.COMPLETE) {
+            if (aborted) {
+                telemetryM.debug("*** TUNING ABORTED ***");
+                telemetryM.debug(warningMessage);
+                telemetryM.debug("");
+            } else {
+                telemetryM.debug("*** TUNING COMPLETE ***");
+            }
+
+            telemetryM.debug("");
+            telemetryM.debug("=== COPY TO PedroConstants.java ===");
+            telemetryM.debug("");
+
+            for (int i = 0; i < 4; i++) {
+                telemetryM.debug(String.format("// %s Pod", POD_NAMES[i]));
+                telemetryM.debug(String.format("new PIDFCoefficients(%.4f, 0, %.5f, %.4f)",
+                    optimalP[i], optimalD[i], optimalF[i]));
+                telemetryM.debug(String.format("// Voltage range: %.3f - %.3f",
+                    voltageMin[i], voltageMax[i]));
+                telemetryM.debug("");
+            }
+
+            telemetryM.debug("=== PERFORMANCE SUMMARY ===");
+            for (int i = 0; i < 4; i++) {
+                telemetryM.debug(String.format("%s: Rise=%.0fms Overshoot=%.1f° Settle=%.0fms",
+                    POD_NAMES[i],
+                    validationRiseTime[i] * 1000,
+                    validationOvershoot[i],
+                    validationSettleTime[i] * 1000));
+            }
+        } else {
+            // Show current phase and progress
+            telemetryM.debug("Phase: " + phase.name());
+            telemetryM.debug("Pod: " + POD_NAMES[Math.min(currentPod, 3)] + " (" + (currentPod + 1) + "/4)");
+            telemetryM.debug("");
+            telemetryM.debug(statusMessage);
+            telemetryM.debug("");
+
+            // Show current angle and power for active pod
+            if (currentPod < 4) {
+                telemetryM.debug(String.format("Angle: %.1f°", getCurrentAngle(currentPod)));
+                telemetryM.debug(String.format("Servo Power: %.3f", servos[currentPod].getPower()));
+            }
+
+            telemetryM.debug("");
+            telemetryM.debug("--- Discovered Values ---");
+            for (int i = 0; i < 4; i++) {
+                String pStr = (phase.ordinal() > Phase.P_TUNING.ordinal() ||
+                              (phase == Phase.P_TUNING && i < currentPod))
+                              ? String.format("%.4f", optimalP[i]) : "---";
+                String dStr = (phase.ordinal() > Phase.D_TUNING.ordinal() ||
+                              (phase == Phase.D_TUNING && i < currentPod))
+                              ? String.format("%.5f", optimalD[i]) : "---";
+                String fStr = (phase.ordinal() > Phase.FEEDFORWARD.ordinal() ||
+                              (phase == Phase.FEEDFORWARD && i < currentPod))
+                              ? String.format("%.4f", optimalF[i]) : "---";
+                String vStr = (phase.ordinal() > Phase.ENCODER_CAL.ordinal() ||
+                              (phase == Phase.ENCODER_CAL && i < currentPod))
+                              ? String.format("[%.2f-%.2f]", voltageMin[i], voltageMax[i]) : "---";
+
+                telemetryM.debug(String.format("%s: P=%s D=%s F=%s V=%s",
+                    POD_NAMES[i], pStr, dStr, fStr, vStr));
+            }
+
+            if (!warningMessage.isEmpty()) {
+                telemetryM.debug("");
+                telemetryM.debug("WARN: " + warningMessage);
+            }
+        }
+
+        telemetryM.debug("");
+        telemetryM.debug("Press B to abort");
+        telemetryM.update(telemetry);
+
+        // Also update regular FTC telemetry (Driver Station)
+        telemetry.addLine("=== POD PDF AUTO-TUNER ===");
+        telemetry.addLine("");
+
+        if (phase == Phase.COMPLETE) {
+            if (aborted) {
+                telemetry.addLine("*** ABORTED ***");
+                telemetry.addLine(warningMessage);
+            } else {
+                telemetry.addLine("*** COMPLETE ***");
+            }
+            telemetry.addLine("");
+            telemetry.addLine("== RESULTS (copy to PedroConstants) ==");
+            for (int i = 0; i < 4; i++) {
+                telemetry.addLine(String.format("%s: P=%.4f D=%.5f F=%.4f",
+                    POD_NAMES[i], optimalP[i], optimalD[i], optimalF[i]));
+                telemetry.addLine(String.format("   V=[%.3f-%.3f]", voltageMin[i], voltageMax[i]));
+            }
+            telemetry.addLine("");
+            telemetry.addLine("== PERFORMANCE ==");
+            for (int i = 0; i < 4; i++) {
+                telemetry.addLine(String.format("%s: %.0fms rise, %.1f° overshoot",
+                    POD_NAMES[i], validationRiseTime[i] * 1000, validationOvershoot[i]));
+            }
+        } else {
+            telemetry.addLine("Phase: " + phase.name());
+            telemetry.addLine("Pod: " + POD_NAMES[Math.min(currentPod, 3)] + " (" + (currentPod + 1) + "/4)");
+            telemetry.addLine("");
+            telemetry.addLine(statusMessage);
+
+            if (currentPod < 4) {
+                telemetry.addLine("");
+                telemetry.addLine(String.format("Angle: %.1f°  Power: %.3f",
+                    getCurrentAngle(currentPod), servos[currentPod].getPower()));
+            }
+
+            telemetry.addLine("");
+            telemetry.addLine("-- Current Values --");
+            for (int i = 0; i < 4; i++) {
+                boolean hasPDF = phase.ordinal() > Phase.D_TUNING.ordinal() ||
+                                (phase == Phase.D_TUNING && i < currentPod);
+                if (hasPDF) {
+                    telemetry.addLine(String.format("%s: P=%.4f D=%.5f F=%.4f",
+                        POD_NAMES[i], optimalP[i], optimalD[i], optimalF[i]));
+                }
+            }
+
+            if (!warningMessage.isEmpty()) {
+                telemetry.addLine("");
+                telemetry.addLine("WARN: " + warningMessage);
+            }
+        }
+
+        telemetry.addLine("");
+        telemetry.addLine("Press B to abort");
+        telemetry.update();
+    }
+
+    @Override
+    public void stop() {
+        stopAllServos();
     }
 }

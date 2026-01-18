@@ -9,7 +9,7 @@ import org.firstinspires.ftc.teamcode.util.MathHelpers;
 
 public class Swerve implements Drivetrain {
     Telemetry telemetry;
-    private Follower follower;
+    protected Follower follower;
 
     private static boolean fieldCentric = true;
 
@@ -22,11 +22,13 @@ public class Swerve implements Drivetrain {
 
     @Override
     public void update(Gamepad gamepad1, double speed, double rotSpeed) {
-        arcade(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x, speed, rotSpeed);
+        telemetry.addData("rightStickX", gamepad1.right_stick_x);
+        telemetry.addData("rightStickY", -gamepad1.right_stick_y);
+        arcade(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x, -gamepad1.right_stick_y, speed, rotSpeed);
     }
 
     @Override
-    public void arcade(double forward, double strafe, double rotate, double speed, double rotSpeed) {
+    public void arcade(double forward, double strafe, double rotateX, double rotateY, double speed, double rotSpeed) {
         //[strafe, forward] [
         //
         if (fieldCentric) {
@@ -43,7 +45,7 @@ public class Swerve implements Drivetrain {
 
 
         //pedro arcade has forward, left, cc as positive
-        ((com.pedropathing.ftc.drivetrains.Swerve) follower.getDrivetrain()).arcadeDrive(forward*speed, -strafe*speed, -rotate*rotSpeed);
+        ((com.pedropathing.ftc.drivetrains.Swerve) follower.getDrivetrain()).arcadeDrive(forward*speed, -strafe*speed, -rotateX*rotSpeed);
     }
 
     @Override
