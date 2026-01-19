@@ -3,6 +3,7 @@ repositories {
     google() // Needed for androidx
     maven { url = 'https://central.sonatype.com/repository/maven-snapshots/'}
     maven { url 'https://jitpack.io' }
+    mavenLocal()
 }
 
 configurations.configureEach {
@@ -19,7 +20,8 @@ dependencies {
     implementation 'org.firstinspires.ftc:FtcCommon:11.0.0'
     implementation 'org.firstinspires.ftc:Vision:11.0.0'
     implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'com.pedropathing:ftc:2.1.0-SNAPSHOT'
+//    implementation 'com.pedropathing:ftc:2.1.0-SNAPSHOT'
+    implementation 'com.pedropathing:ftc:LOCAL'
     implementation 'com.pedropathing:telemetry:1.0.0'
     implementation 'com.pedropathing:ivy:0.0.1-SNAPSHOT'
     implementation 'com.github.Thermal-Equilibrium:homeostasis-FTC:1.0.8'
