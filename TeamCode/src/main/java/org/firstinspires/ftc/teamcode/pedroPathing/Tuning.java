@@ -18,13 +18,15 @@ import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.geometry.HeadingInterpolator;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.geometry.PoseHistory;
-import com.pedropathing.geometry.Vector;
 import com.pedropathing.math.MathFunctions;
+import com.pedropathing.math.Vector;
+import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
+import com.pedropathing.util.PoseHistory;
+
+import org.firstinspires.ftc.teamcode.util.Vector2D;
 import com.pedropathing.telemetry.SelectableOpMode;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -546,7 +548,7 @@ class LateralVelocityTuner extends OpMode {
             } else {
                 follower.setTeleOpDrive(0, 1, 0, true);
                 double currentVelocity =
-                        Math.abs(follower.getVelocity().dot(new Vector(1, Math.PI / 2)));
+                        Math.abs(follower.getVelocity().dot(new Vector2D(0, 1)));
                 velocities.add(currentVelocity);
                 velocities.remove(0);
             }
