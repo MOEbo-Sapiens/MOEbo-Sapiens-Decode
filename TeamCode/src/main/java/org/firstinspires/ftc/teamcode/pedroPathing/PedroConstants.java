@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.pedroPathing;
 
 import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.control.PIDFCoefficients;
+import com.pedropathing.control.PredictiveBrakingCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
 import com.pedropathing.ftc.FollowerBuilder;
@@ -18,17 +19,28 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class PedroConstants {
     public static FollowerConstants followerConstants = new FollowerConstants()
-        .forwardZeroPowerAcceleration(-138.72)
-        .lateralZeroPowerAcceleration(-138.72)
+        .forwardZeroPowerAcceleration(-97.41126)
+        .lateralZeroPowerAcceleration(-97.41126)
         .useSecondaryDrivePIDF(true)
         .useSecondaryHeadingPIDF(true)
         .useSecondaryTranslationalPIDF(true)
-        .translationalPIDFCoefficients(new PIDFCoefficients(0.125, 0, 0.008 , 0))
-        .secondaryTranslationalPIDFCoefficients(new PIDFCoefficients(0.0825, 0, 0.008, 0.01))
-        .headingPIDFCoefficients(new PIDFCoefficients(1, 0 , 0.003, 0))
-        .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(0.63, 0, 0.035, 0))
+        .translationalPIDFCoefficients(new PIDFCoefficients(0.125, 0, 0.008 , 0.06))
+        .secondaryTranslationalPIDFCoefficients(new PIDFCoefficients(0.0825, 0, 0.008, 0.06))
+
+        .headingPIDFCoefficients(new PIDFCoefficients(2, 0 , 0.003, 0.06))
+        .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(1, 0, 0.03, 0.06))
+
+//        .headingPIDFCoefficients(new PIDFCoefficients(0, 0 , 0.000, 0.06))
+//        .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(0, 0, 0.0, 0.06))
+
         .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.0035, 0, 0.00001, 0.6, 0.13))
         .secondaryDrivePIDFCoefficients(new FilteredPIDFCoefficients(0.005, 0, 0.000005, 0.6, 0.13))
+
+//        .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(
+//                0.05, //0.05 to 0.3
+//                0,//0.38735914623969386,
+//                0.002)
+//        )
         .centripetalScaling(0.002)
         .mass(5.362); //TODO: actually weigh the robot, in kg
 
@@ -42,55 +54,68 @@ public class PedroConstants {
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
     public static SwerveConstants swerveConstants = new SwerveConstants()
-            .velocity(77.45)
+            .velocity(83.93)
             .useBrakeModeInTeleOp(true);
 
+   // F - front: .130, back: .190
+    // P=0.00645 D=0.00019
+    // P=0.00549 D=0.00028
+
+    private static double kP = 0.0055;
+    private static double kD = 0.00015;
+    private static double kFFront = 0.0130;
+    private static double kFBack = 0.0190;
+
     private static CoaxialPod leftFront(HardwareMap hardwareMap) {
-        return new CoaxialPod(
+        CoaxialPod pod = new CoaxialPod(
                 hardwareMap,
                 "sm2", "ss2", "se2",
-                new PIDFCoefficients(0.005, 0, 0.0, 0.01),
+                new PIDFCoefficients(kP, 0, kD, kFFront),
                 DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.FORWARD,
                 275.1546707504, new Pose(305.86624, 311.4),
                 0.025, 3.290,
                 false
         );
+        return pod;
     }
 
     private static CoaxialPod rightFront(HardwareMap hardwareMap) {
-        return new CoaxialPod(
+        CoaxialPod pod = new CoaxialPod(
                 hardwareMap,
                 "sm1", "ss1", "se1",
-                new PIDFCoefficients(0.005, 0, 0.0, 0.01),
+                new PIDFCoefficients(kP, 0, kD, kFFront),
                 DcMotorSimple.Direction.FORWARD, DcMotorSimple.Direction.FORWARD,
                 346.56880733944956, new Pose(305.86624, -311.4),
                 0.018, 3.288,
                 false
         );
+        return pod;
     }
 
     private static CoaxialPod leftBack(HardwareMap hardwareMap) {
-        return new CoaxialPod(
+        CoaxialPod pod = new CoaxialPod(
                 hardwareMap,
                 "sm3", "ss3", "se3",
-                new PIDFCoefficients(0.005, 0, 0.0, 0.01),
+                new PIDFCoefficients(kP, 0, kD, kFBack),
                 DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.FORWARD,
                 34.1549725442, new Pose(-305.86624, 311.4),
                 0.029, 3.307,
                 false
         );
+        return pod;
     }
 
     private static CoaxialPod rightBack(HardwareMap hardwareMap) {
-        return new CoaxialPod(
+        CoaxialPod pod = new CoaxialPod(
                 hardwareMap,
                 "sm0", "ss0", "se0",
-                new PIDFCoefficients(0.005, 0, 0.0, 0.01),
+                new PIDFCoefficients(kP, 0, kD, kFBack),
                 DcMotorSimple.Direction.FORWARD, DcMotorSimple.Direction.FORWARD,
                 288.7557042896, new Pose(-305.86624, -311.4),
                 0.014, 3.301,
                 false
         );
+        return pod;
     }
 
     public static PathConstraints pathConstraints = new PathConstraints(0.95, 100, 1, 1);
