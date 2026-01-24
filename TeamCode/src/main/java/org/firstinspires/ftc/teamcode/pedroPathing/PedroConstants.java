@@ -24,17 +24,19 @@ public class PedroConstants {
         .useSecondaryDrivePIDF(true)
         .useSecondaryHeadingPIDF(true)
         .useSecondaryTranslationalPIDF(true)
-        .translationalPIDFCoefficients(new PIDFCoefficients(0.125, 0, 0.008 , 0.06))
-        .secondaryTranslationalPIDFCoefficients(new PIDFCoefficients(0.0825, 0, 0.008, 0.06))
 
-        .headingPIDFCoefficients(new PIDFCoefficients(2, 0 , 0.003, 0.06))
-        .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(1, 0, 0.03, 0.06))
+        .translationalPIDFCoefficients(new PIDFCoefficients(0.125, 0, 0.008 , 0))
+        .secondaryTranslationalPIDFCoefficients(new PIDFCoefficients(0.0825, 0, 0.008, 0))
 
-//        .headingPIDFCoefficients(new PIDFCoefficients(0, 0 , 0.000, 0.06))
-//        .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(0, 0, 0.0, 0.06))
+        .headingPIDFCoefficients(new PIDFCoefficients(1.5, 0 , 0.003, 0))
+        .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(0.75, 0, 0.03, 0))
 
-        .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.0035, 0, 0.00001, 0.6, 0.13))
-        .secondaryDrivePIDFCoefficients(new FilteredPIDFCoefficients(0.005, 0, 0.000005, 0.6, 0.13))
+        .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.005, 0, 0.00003, 0.6, 0.13))
+        .secondaryDrivePIDFCoefficients(new FilteredPIDFCoefficients(0.004, 0, 0.000002, 0.6, 0.13))
+
+
+//        .drivePIDFCoefficients(new FilteredPIDFCoefficients(0,0,0,0,0))
+//        .secondaryDrivePIDFCoefficients(new FilteredPIDFCoefficients(0,0,0,0,0))
 
 //        .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(
 //                0.05, //0.05 to 0.3
@@ -118,6 +120,7 @@ public class PedroConstants {
         return pod;
     }
 
+    //TODO: TUNE THESE, CAN MAKE A HUGE DIFF
     public static PathConstraints pathConstraints = new PathConstraints(0.95, 100, 1, 1);
 
     public static Follower createFollower(HardwareMap hardwareMap) {
