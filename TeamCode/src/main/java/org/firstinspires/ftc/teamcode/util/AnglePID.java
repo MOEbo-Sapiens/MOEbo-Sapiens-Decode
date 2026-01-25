@@ -1,7 +1,7 @@
 package org.firstinspires.ftc.teamcode.util;
 
 import com.ThermalEquilibrium.homeostasis.Parameters.PIDCoefficients;
-import com.ThermalEquilibrium.homeostasis.Utils.Timer;
+import com.pedropathing.util.Timer;
 
 
 public class AnglePID {
@@ -18,7 +18,7 @@ public class AnglePID {
 
     public double calculate(double reference, double state) {
         double dt = this.getDT();
-        double error = MathHelpers.wrapAngleRadians(this.calculateError(reference, state));
+        double error = MathHelpers.wrapAngleRadians(reference - state);
         double derivative = this.calculateDerivative(error, dt);
         this.integrate(error, dt);
         this.previousError = error;
@@ -28,16 +28,12 @@ public class AnglePID {
     public double getDT() {
         if (!this.hasRun) {
             this.hasRun = true;
-            this.timer.reset();
+            this.timer.resetTimer();
         }
 
-        double dt = this.timer.currentTime();
-        this.timer.reset();
+        double dt = this.timer.getElapsedTime();
+        this.timer.resetTimer();
         return dt;
-    }
-
-    protected double calculateError(double reference, double state) {
-        return reference - state;
     }
 
     protected void integrate(double error, double dt) {

@@ -8,10 +8,22 @@ import org.firstinspires.ftc.teamcode.robot.Constants;
 public class RedAuto extends Auto{
     @Override
     protected void setPoses() {
-       goalPose = goalPose.mirror();
-       startPose = startPose.mirror();
-       //pose1 = pose1.mirror();
-        //etc
+        startPose = startPose.mirror();
+        shootingPose = shootingPose.mirror();
+        middlePickupPose = middlePickupPose.mirror();
+        middlePickupControlPoint = middlePickupControlPoint.mirror();
+        gateClearPose = gateClearPose.mirror();
+        gateClearControlPoint = gateClearControlPoint.mirror();
+        gatePickupPose = gatePickupPose.mirror();
+        gatePickupControlPoint = gatePickupControlPoint.mirror();
+        closePickupPose = closePickupPose.mirror();
+        farPickupPose = farPickupPose.mirror();
+        farPickupControlPoint = farPickupControlPoint.mirror();
+        cornerPose = cornerPose.mirror();
+        cornerControlPoint = cornerControlPoint.mirror();
+        cornerBackupControlPoint = cornerBackupControlPoint.mirror();
+        parkPose = parkPose.mirror();
+        goalPose = goalPose.mirror();
     }
 
 

@@ -10,6 +10,7 @@ import static com.pedropathing.ivy.groups.Groups.sequential;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.ivy.Command;
+import com.pedropathing.util.Timer;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -27,6 +28,8 @@ import java.util.function.DoubleSupplier;
 public class Robot {
 
     private State currentState;
+
+    Timer timer = new Timer();
 
     Intake intake;
     Shooter shooter;
@@ -53,8 +56,8 @@ public class Robot {
         follower = PedroConstants.createFollower(hardwareMap);
         shooter = new Shooter(hardwareMap, follower, goalPose);
 
-        setDrivetrain(Drivetrains.SWERVE);
-        setState(States.INTAKING);
+        setDrivetrain(Drivetrains.SWERVE_ANGLE);
+        setState(States.NONE);
 
 //        limelightManager = new LimelightManager(hardwareMap, telemetry);
 //        setPipeline(Pipelines.APRIL_TAG);
@@ -67,14 +70,25 @@ public class Robot {
 
 
     public void init() {
+        timer.resetTimer();
         schedule(
                 infinite(this::clearCaches),
                 infinite(this::updateFollower),
 //                infinite(this::limelightProcess),
                 infinite(this::executeCurrentState),
                 infinite(this::updateShooter),
-                infinite(this::updateTelemetry)
+                infinite(this::updateTelemetry),
+                infinite(this::updateLastTurretTicks)
         );
+    }
+
+
+    public Follower getFollower() {
+        return follower;
+    }
+
+    public void updateLastTurretTicks() {
+        Constants.lastTurretTicks = shooter.getTurretTicks();
     }
 
     public void updateFollower() {
@@ -137,6 +151,8 @@ public class Robot {
 
     public void updateTelemetry() {
         telemetry.addData("Drivetrain:", drivetrainName());
+        telemetry.addData("loop time millis", timer.getElapsedTime());
+        timer.resetTimer();
         telemetry.update();
     }
 

@@ -36,7 +36,11 @@ public class ShootingState implements State {
         schedule(robot.activateShooter());
         schedule(robot.openGate());
         updateShooter = robot.updateShootingSubsystems();
-        schedule(updateShooter);
+
+        if (!Constants.lastOpModeWasAuto) {
+            schedule(updateShooter);
+        }
+
         transitioningState = false;
     }
 

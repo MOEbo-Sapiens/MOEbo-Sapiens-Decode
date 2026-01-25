@@ -7,7 +7,6 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.robot.Constants;
-import org.firstinspires.ftc.teamcode.shooter.math.QuadraticInterpolation;
 import org.firstinspires.ftc.teamcode.shooter.math.ShooterSolver;
 import org.firstinspires.ftc.teamcode.util.MathHelpers;
 
@@ -37,7 +36,7 @@ public class Shooter {
     //Pose: 102, 102
 
 
-    public static double transitionYValue = 52;
+    public static double transitionYValue = 48;
 
     public double distance(Pose launchPose, Pose goalPose) {
         return Math.hypot(goalPose.getX() - launchPose.getX(), goalPose.getY() - launchPose.getY());
@@ -45,27 +44,33 @@ public class Shooter {
 
     private double[] closeDistances = new double[] {
             distance(new Pose(48, 96), Constants.BLUE_GOAL_POSE.mirror()),
-            distance(new Pose(72, 72), Constants.BLUE_GOAL_POSE.mirror()),
-            distance(new Pose(96, 96), Constants.BLUE_GOAL_POSE.mirror()),
-            distance(new Pose(102, 102), Constants.BLUE_GOAL_POSE.mirror()),
+            distance(new Pose(72, 72), Constants.BLUE_GOAL_POSE.mirror()), //1220, angle 0.7339 rad
+            distance(new Pose(88, 85), Constants.BLUE_GOAL_POSE.mirror()), //1120, angle 0.6981 rad
+            distance(new Pose(90, 90), Constants.BLUE_GOAL_POSE.mirror()), //1078, angle 0.6981 rad
+            distance(new Pose(96, 96), Constants.BLUE_GOAL_POSE.mirror()), //1034, angle 0.6981 rad
+            distance(new Pose(102, 102), Constants.BLUE_GOAL_POSE.mirror()),//1006, angle 0.6981 rad
     };
 
     private double[] closeSpeeds = new double[] {
             1315,
-            1260,
-            1040,
-            1030
+            1220,
+            1120,
+            1078,
+            1034,
+            1006,
     };
 
     //hood angles
     private double[] closeAngles = new double[] {
             Math.toRadians(54.7401772876),
-            Math.toRadians(54.3393172902),
-            Math.toRadians(44.0946214541),
-            Math.toRadians(43.2752918071)
+            Math.toRadians(42.0493725847),
+            Math.toRadians(39.9981836781),
+            Math.toRadians(39.9981836781),
+            Math.toRadians(39.9981836781),
+            Math.toRadians(39.9981836781),
     };
 
-    Interpolation closeFlywheelSpeeds = new QuadraticInterpolation(closeDistances, closeSpeeds);
+    Interpolation closeFlywheelSpeeds = new LinearInterpolation(closeDistances, closeSpeeds);
     Interpolation closeHoodAngles = new LinearInterpolation(closeDistances, closeAngles);
 
     private double[] farDistances = new double[] {
@@ -87,7 +92,7 @@ public class Shooter {
     Interpolation farFlywheelSpeeds = new LinearInterpolation(farDistances, farSpeeds);
     Interpolation farHoodAngles = new LinearInterpolation(farDistances, farAngles);
 
-    public static int flywheelToleranceTicks = 40; //TODO: adjust as needed
+    public static int flywheelToleranceTicks = 25; //TODO: adjust as needed
     public static double turretToleranceDegrees = 2; //TODO: adjust as needed
     public static double hoodToleranceDegrees = 2; //TODO: adjust as needed
 
@@ -205,6 +210,10 @@ public class Shooter {
 
     public void setCloseGatePosition() {
         gateServo.setPosition(closedGatePosition);
+    }
+
+    public int getTurretTicks() {
+        return turret.getCurrentPositionTicks();
     }
 
     public double getTurretAngle() {

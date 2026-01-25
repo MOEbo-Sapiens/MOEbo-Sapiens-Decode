@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
+import com.pedropathing.VectorCalculator;
 import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.control.PredictiveBrakingCoefficients;
@@ -18,6 +19,12 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class PedroConstants {
+    public static PIDFCoefficients secondaryHeadingCoeffs =
+            new PIDFCoefficients(0.75, 0, 0.03, 0);
+
+    public static PIDFCoefficients headingCoeffs =
+            new PIDFCoefficients(1.5, 0 , 0.003, 0);
+
     public static FollowerConstants followerConstants = new FollowerConstants()
         .forwardZeroPowerAcceleration(-97.41126)
         .lateralZeroPowerAcceleration(-97.41126)
@@ -28,8 +35,8 @@ public class PedroConstants {
         .translationalPIDFCoefficients(new PIDFCoefficients(0.125, 0, 0.008 , 0))
         .secondaryTranslationalPIDFCoefficients(new PIDFCoefficients(0.0825, 0, 0.008, 0))
 
-        .headingPIDFCoefficients(new PIDFCoefficients(1.5, 0 , 0.003, 0))
-        .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(0.75, 0, 0.03, 0))
+        .headingPIDFCoefficients(headingCoeffs)
+        .secondaryHeadingPIDFCoefficients(secondaryHeadingCoeffs)
 
         .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.005, 0, 0.00003, 0.6, 0.13))
         .secondaryDrivePIDFCoefficients(new FilteredPIDFCoefficients(0.004, 0, 0.000002, 0.6, 0.13))

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmodes;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -52,8 +53,8 @@ public class TurretTestNew extends LinearOpMode {
                 target = Math.toRadians(0);
             }
 
-            turret.setTurretAngle(target);
-            turret.update(telemetry);
+//            turret.setTurretAngle(target);
+//            turret.update(telemetry);
 
             telemetry.addData("Current Angle", Math.toDegrees(turret.getCurrentAngle()));
             telemetry.addData("Target Angle", Math.toDegrees(turret.getTargetAngle()));

@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 import static com.pedropathing.ivy.bindings.Bindings.bind;
 import static com.pedropathing.ivy.commands.Commands.instant;
+import static com.pedropathing.ivy.groups.Groups.sequential;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.robot.Constants;
@@ -25,6 +26,8 @@ public class IntakingState implements State {
 
     private Command joystickToIntake;
 
+//    private Command transition;
+
     private boolean transitioning = false;
 
     public IntakingState(Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2) {
@@ -37,12 +40,27 @@ public class IntakingState implements State {
         schedule(robot.closeGate());
         schedule(robot.shooterIntakingPos());
 
+//        transition = bind(() -> gamepad1.a).and(() -> !Constants.lastOpModeWasAuto).and(() -> !transitioning)
+//                .rise(
+//                        sequential(
+//                                instant(() -> transitioning = true),
+//                                instant(() -> cancel(transition)),
+//                                robot.setIntakePower(0),
+//                                instant(() -> robot.setState(States.SHOOTING))
+//                        )
+//                );
+
+
+
         joystickToIntake = robot.joysticksToIntakePower(
                 () -> gamepad1.left_trigger,
                 () -> gamepad1.right_trigger
         );
 
-        schedule(joystickToIntake);
+        if (!Constants.lastOpModeWasAuto) {
+            schedule(joystickToIntake);
+        }
+
         transitioning = false;
     }
 

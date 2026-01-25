@@ -17,6 +17,9 @@ import org.firstinspires.ftc.teamcode.robot.Constants;
 
 @Config
 public class Turret {
+
+    public static int turretOffset = 0;
+
     DcMotorEx turretMotor;
     private double cachedPower = 0;
 
@@ -54,11 +57,12 @@ public class Turret {
             return;
         }
         cachedPower = power;
+
         turretMotor.setPower(power);
     }
 
-    public double getCurrentPositionTicks() {
-        return turretMotor.getCurrentPosition();
+    public int getCurrentPositionTicks() {
+        return turretMotor.getCurrentPosition() + turretOffset;
     }
 
     /**
@@ -103,6 +107,7 @@ public class Turret {
             setPower(0);
         }
     }
+
 
     public void update(Telemetry telemetry) {
         //TODO: Comment below out after tuning
