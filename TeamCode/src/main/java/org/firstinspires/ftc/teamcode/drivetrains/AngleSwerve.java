@@ -1,33 +1,29 @@
 package org.firstinspires.ftc.teamcode.drivetrains;
 
-import com.ThermalEquilibrium.homeostasis.Parameters.PIDCoefficients;
 import com.acmerobotics.dashboard.config.Config;
-import com.pedropathing.VectorCalculator;
+import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.follower.FollowerConstants;
 import com.pedropathing.math.MathFunctions;
-import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.pedroPathing.PedroConstants;
 import org.firstinspires.ftc.teamcode.robot.Constants;
-import org.firstinspires.ftc.teamcode.util.AnglePID;
-import org.firstinspires.ftc.teamcode.util.MathHelpers;
 import org.firstinspires.ftc.teamcode.util.Vector2D;
 
 @Config
 public class AngleSwerve extends Swerve {
-    public static double headingKP = 0.2;
-    public static double headingKD = 100;
+    private static final double HEADING_POWER_MIN = -1.0;
+    private static final double HEADING_POWER_MAX = 1.0;
 
-    double angle = 0;
+    private final PIDFController headingPIDF =
+            new PIDFController(PedroConstants.secondaryHeadingCoeffs);//hack to get better coeffs
+    private final PIDFController secondaryHeadingPIDF =
+            new PIDFController(PedroConstants.secondaryHeadingCoeffs);
 
+    private double angle = Math.toRadians(90);
 
-    AnglePID anglePID = new AnglePID(new PIDCoefficients(headingKP, 0, headingKD));
-
-    //AnglePID
     public AngleSwerve(Follower follower, Telemetry telemetry) {
         super(follower, telemetry);
     }
@@ -41,20 +37,48 @@ public class AngleSwerve extends Swerve {
     public void arcade(double forward, double strafe, double rotateX, double rotateY, double speed, double rotSpeed) {
         Vector2D driveVector = new Vector2D(rotateX, rotateY);
 
-        if (Constants.color == Constants.Color.BLUE) {
+        if (Constants.color == Constants.Color.RED) {
             driveVector.rotateVector(Math.toRadians(-90));
         } else {
             driveVector.rotateVector(Math.toRadians(90));
         }
 
 
-        angle = (driveVector.getMagnitude() > 0.05) ? driveVector.getTheta() : angle;
+        angle = (driveVector.getMagnitude() > 0.1) ? driveVector.getTheta() : angle;
         telemetry.addData("Joystick Angle", Math.toDegrees(angle));
 
-        double headingPower = anglePID.calculate(angle, follower.getHeading());
+        double headingPower = -calculateHeadingPower(angle, follower.getHeading());
         telemetry.addData("headingPower", headingPower);
 
-        super.arcade(forward, strafe, headingPower,0, speed, rotSpeed);
+        super.arcade(forward, strafe, headingPower, 0, speed, rotSpeed);
+    }
+
+    private double calculateHeadingPower(double targetHeading, double currentHeading) {
+        PIDFCoefficients primaryCoeffs = PedroConstants.headingCoeffs;
+        PIDFCoefficients secondaryCoeffs = PedroConstants.secondaryHeadingCoeffs;
+        headingPIDF.setCoefficients(primaryCoeffs);
+        secondaryHeadingPIDF.setCoefficients(secondaryCoeffs);
+
+        double headingError = MathFunctions.getTurnDirection(currentHeading, targetHeading)
+                * MathFunctions.getSmallestAngleDifference(currentHeading, targetHeading);
+        double turnDirection = MathFunctions.getTurnDirection(currentHeading, targetHeading);
+
+        if (PedroConstants.followerConstants.useSecondaryHeadingPIDF
+                && Math.abs(headingError) < PedroConstants.followerConstants.headingPIDFSwitch) {
+            secondaryHeadingPIDF.updateFeedForwardInput(turnDirection);
+            secondaryHeadingPIDF.updateError(headingError);
+            return MathFunctions.clamp(
+                    secondaryHeadingPIDF.run(),
+                    HEADING_POWER_MIN,
+                    HEADING_POWER_MAX);
+        }
+
+        headingPIDF.updateFeedForwardInput(turnDirection);
+        headingPIDF.updateError(headingError);
+        return MathFunctions.clamp(
+                headingPIDF.run(),
+                HEADING_POWER_MIN,
+                HEADING_POWER_MAX);
     }
 
     @Override
