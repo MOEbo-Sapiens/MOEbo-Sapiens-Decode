@@ -34,6 +34,28 @@ public class Flywheel {
         shooterMotorR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
     }
 
+    /**
+     *
+     * @param ticksPerSecond motor speed in ticks per second
+     * @return flywheel speed in radians per second
+     */
+    public static double motorTicksToFlywheelRadians(double ticksPerSecond) {
+        //28 -- ticks per rotation
+        // 1.4 -- ratio of flywheel velocity to motor velocity
+        return (ticksPerSecond / 28) * 2 * Math.PI * 1.4;
+    }
+
+    /**
+     *
+     * @param radiansPerSecond flywheel speed in radians per second
+     * @return motor speed in ticks per second
+     */
+    public static double flywheelRadiansToMotorTicks(double radiansPerSecond) {
+        //28 -- ticks per rotation
+        // 1.4 -- ratio of flywheel velocity to motor velocity
+        return (radiansPerSecond / (2 * Math.PI * 1.4)) * 28;
+    }
+
 
     public double getCurrentAngularVel() {
         return shooterMotorR.getVelocity();

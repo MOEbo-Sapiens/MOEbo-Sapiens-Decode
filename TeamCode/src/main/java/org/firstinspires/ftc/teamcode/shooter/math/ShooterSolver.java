@@ -1,7 +1,13 @@
 package org.firstinspires.ftc.teamcode.shooter.math;
 
+import static org.firstinspires.ftc.teamcode.shooter.Shooter.distance;
+
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.util.Timer;
+
+import org.firstinspires.ftc.teamcode.robot.Constants;
+import org.firstinspires.ftc.teamcode.shooter.Flywheel;
+import org.firstinspires.ftc.teamcode.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.util.Vector2D;
 import smile.interpolation.LinearInterpolation;
 
@@ -66,7 +72,7 @@ public class ShooterSolver {
     private static final double CD = 0.534;
 
     /** Flywheel radius in inches */
-    private static final double R_FLYWHEEL = 1.41732;
+    private static final double R_FLYWHEEL = 1.41732; //36mm
 
     /** Ball radius in inches */
     private static final double R_BALL = 2.5;
@@ -75,7 +81,7 @@ public class ShooterSolver {
     private static final double MASS_BALL = 0.0748 * 0.0685218;
 
     /** Flywheel moment of inertia in slug·in² (MEASURE THIS) */
-    private static final double J_FLYWHEEL = 0.01; // TODO: Measure actual value
+    private static final double J_FLYWHEEL = 0.0249306; //234731.968 g*mm^2
 
     /** Drag constant k = ρ·CD·A / (2m) */
     private static final double k = rho * CD * Math.PI * R_BALL * R_BALL / (2 * MASS_BALL);
@@ -86,18 +92,18 @@ public class ShooterSolver {
 
     /**
      * Offset of turret pivot from robot center, in ROBOT FRAME (inches). Robot frame: +x = forward,
-     * +y = left TODO: Measure actual values
+     * +y = left  -- value measured?
      */
-    private static final Vector2D SHOOTER_OFFSET = new Vector2D(0.0, 0.0);
+    private static final Vector2D SHOOTER_OFFSET = new Vector2D(-2.4208267717, 0.0); //-61.589mm, 0mm
 
     /**
      * Height of "shooter center" above ground (inches). "Shooter center" is defined as ball center
-     * position when θ_hood = 0. TODO: Measure actual value
+     * position when θ_hood = 0. -- value measured?
      */
-    private static final double FLYWHEEL_HEIGHT = 12.0;
+    private static final double FLYWHEEL_HEIGHT = 11.6034645669; //294.728 in
 
     /** Angle at which ball first contacts flywheel (radians) - negative means below horizontal
-     *  TODO: Measure actual value
+     *  --measured?
      */
 
     private static final double THETA_FIRST_CONTACT = Math.toRadians(-18.241);
@@ -122,13 +128,13 @@ public class ShooterSolver {
     private static final double LAUNCH_ANGLE_OFFSET = Math.toRadians(90);
 
     /** Arc angle at which slip ends (radians) - CALIBRATE THIS */
-    private static final double THETA_SLIP = Math.toRadians(60); // TODO: Calibrate
+    private static final double THETA_SLIP = MIN_HOOD_ANGLE - THETA_FIRST_CONTACT; // TODO: Calibrate, rn assumes no slip
 
     /** Fixed delay before ball contacts flywheel (seconds) */
-    private static final double T_INIT = 0.05; // TODO: Measure actual value
+    private static final double T_INIT = 0.1; // TODO: Measure actual value
 
     /** Height of goal (inches) */
-    private static final double GOAL_HEIGHT = 38.75; // TODO: Set actual value
+    private static final double GOAL_HEIGHT = 47; // value set?
 
 
     // =========================================================================
@@ -149,10 +155,10 @@ public class ShooterSolver {
 
 
     /** Base tangential transfer coefficient (at θ_hood = 0). TODO: Calibrate */
-    private static final double K_TAN_BASE = 0.55;
+    private static final double K_TAN_BASE = 1;
 
     /** Tangential transfer increase per radian of hood angle. TODO: Calibrate */
-    private static final double K_TAN_SLOPE = 0.29;
+    private static final double K_TAN_SLOPE = 0;
 
     // =========================================================================
     // DERIVED CONSTANTS
@@ -192,28 +198,48 @@ public class ShooterSolver {
     // =========================================================================
 
     /**
-     * Close zone calibration data: distances (inches). Must be in ascending order. TODO: Fill with
-     * calibration data.
+     * Close zone calibration data: distances (inches). Must be in ascending order.
+     * -- tuned?
      */
-    private static final double[] CLOSE_DISTANCES = {};
+    private static double[] CLOSE_DISTANCES = new double[] {
+            distance(new Pose(48, 96), Constants.BLUE_GOAL_POSE.mirror()),
+            distance(new Pose(72, 72), Constants.BLUE_GOAL_POSE.mirror()), //1220, angle 0.7339 rad
+            distance(new Pose(88, 85), Constants.BLUE_GOAL_POSE.mirror()), //1120, angle 0.6981 rad
+            distance(new Pose(90, 90), Constants.BLUE_GOAL_POSE.mirror()), //1078, angle 0.6981 rad
+            distance(new Pose(96, 96), Constants.BLUE_GOAL_POSE.mirror()), //1034, angle 0.6981 rad
+            distance(new Pose(102, 102), Constants.BLUE_GOAL_POSE.mirror()),//1006, angle 0.6981 rad
+    };
 
     /**
-     * Close zone calibration data: flywheel speeds (rad/s) corresponding to CLOSE_DISTANCES. TODO:
-     * Fill with calibration data.
+     * Close zone calibration data: flywheel speeds (rad/s) corresponding to CLOSE_DISTANCES.
+     * -- tuned?
      */
-    private static final double[] CLOSE_VELOCITIES = {};
+    private static double[] CLOSE_VELOCITIES = new double[] {
+            Flywheel.motorTicksToFlywheelRadians(1315),
+            Flywheel.motorTicksToFlywheelRadians(1220),
+            Flywheel.motorTicksToFlywheelRadians(1120),
+            Flywheel.motorTicksToFlywheelRadians(1078),
+            Flywheel.motorTicksToFlywheelRadians(1034),
+            Flywheel.motorTicksToFlywheelRadians(1006),
+    };
 
     /**
-     * Far zone calibration data: distances (inches). Must be in ascending order. TODO: Fill with
-     * calibration data.
+     * Far zone calibration data: distances (inches). Must be in ascending order.
+     * -- tuned?
      */
-    private static final double[] FAR_DISTANCES = {};
+    private static double[] FAR_DISTANCES = new double[] {
+            distance(new Pose(72, 24), Constants.BLUE_GOAL_POSE),
+            distance(new Pose(84, 12), Constants.BLUE_GOAL_POSE)
+    };
 
     /**
-     * Far zone calibration data: flywheel speeds (rad/s) corresponding to FAR_DISTANCES. TODO: Fill
-     * with calibration data.
+     * Far zone calibration data: flywheel speeds (rad/s) corresponding to FAR_DISTANCES.
+     * -- tuned?
      */
-    private static final double[] FAR_VELOCITIES = {};
+    private static double[] FAR_VELOCITIES = new double[] {
+            Flywheel.motorTicksToFlywheelRadians(1712),
+            Flywheel.motorTicksToFlywheelRadians(1712),
+    };
 
     /** Linear interpolation for close zone flywheel speeds. Initialized lazily. */
     private static LinearInterpolation closeLerp = null;

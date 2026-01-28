@@ -194,6 +194,10 @@ public class Robot {
         return shooter.getFlywheelAngularVelocity();
     }
 
+    public double getTargetFlywheelAngularVelocity() {
+        return shooter.getFlywheeelTargetAngularVelocity();
+    }
+
     public void setDrivetrain(Drivetrains drivetrain) {
        this.drivetrain = drivetrain.build(follower, telemetry);
     }

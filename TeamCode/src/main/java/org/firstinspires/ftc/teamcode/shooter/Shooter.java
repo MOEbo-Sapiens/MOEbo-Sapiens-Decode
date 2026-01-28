@@ -38,7 +38,7 @@ public class Shooter {
 
     public static double transitionYValue = 48;
 
-    public double distance(Pose launchPose, Pose goalPose) {
+    public static double distance(Pose launchPose, Pose goalPose) {
         return Math.hypot(goalPose.getX() - launchPose.getX(), goalPose.getY() - launchPose.getY());
     }
 
@@ -222,6 +222,10 @@ public class Shooter {
 
     public double getFlywheelAngularVelocity() {
         return flywheel.getCurrentAngularVel();
+    }
+
+    public double getFlywheeelTargetAngularVelocity() {
+        return flywheel.getTargetAngularVelocity();
     }
 
     public double getHoodAngle() {
