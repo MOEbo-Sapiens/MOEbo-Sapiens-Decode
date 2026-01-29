@@ -21,7 +21,6 @@ import org.firstinspires.ftc.teamcode.pedroPathing.PedroConstants;
 import org.firstinspires.ftc.teamcode.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.states.State;
 
-import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.function.DoubleSupplier;
 
@@ -29,7 +28,11 @@ public class Robot {
 
     private State currentState;
 
+    private boolean useVelocityComp = true;
+
     Timer timer = new Timer();
+
+    boolean currentlyShooting = false;
 
     Intake intake;
     Shooter shooter;
@@ -142,7 +145,13 @@ public class Robot {
     }
 
     public Command updateShootingSubsystems() {
-        return infinite(() -> shooter.updateShootingSubsystems(follower.getPose(), telemetry));
+        return infinite(() -> {
+            if (!currentlyShooting) {
+                shooter.updateShootingSubsystems(follower.getPose(), telemetry, useVelocityComp);
+            } else {
+                shooter.updateTurretOnly(follower.getPose(), telemetry, useVelocityComp);
+            }
+        });
     }
 
     public boolean readyToShoot() {
@@ -221,10 +230,12 @@ public class Robot {
     public Command shoot() {
         return sequential(
                 openGate(),
+                instant(() -> currentlyShooting = true),
                 setIntakePower(1),
                 waitMs(100),
                 closeGate(),
-                waitMs(100)
+                waitMs(100),
+                instant(() -> currentlyShooting = false)
         );
     }
 

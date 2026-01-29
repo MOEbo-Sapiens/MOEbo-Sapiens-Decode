@@ -16,7 +16,7 @@ public class ShootingTest extends LinearOpMode {
     Hood hood;
     Intake intake;
 
-    double flywheelTarget = 0;
+    double flywheelTarget = 1000;
     double hoodTarget = 0;
 
 
@@ -61,8 +61,7 @@ public class ShootingTest extends LinearOpMode {
             }
 
             if (gamepad1.dpadUpWasPressed()) {
-                hoodTarget += 0.05;
-                hoodTarget = Math.min(1, hoodTarget);
+                flywheelTarget+=100;
             }
 
             if (gamepad1.dpadRightWasPressed()) {
@@ -72,8 +71,7 @@ public class ShootingTest extends LinearOpMode {
 
 
             if (gamepad1.dpadDownWasPressed()) {
-                hoodTarget -= 0.05;
-                hoodTarget = Math.max(0, hoodTarget);
+                flywheelTarget-=100;
             }
 
             if (gamepad1.dpadLeftWasPressed()) {

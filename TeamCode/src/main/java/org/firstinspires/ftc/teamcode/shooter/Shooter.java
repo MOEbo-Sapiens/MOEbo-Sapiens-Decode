@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.shooter;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -110,6 +111,8 @@ public class Shooter {
 
     Pose goalPose;
 
+    public double lastTurretAngle;
+
     public Shooter(HardwareMap hardwareMap, Follower follower, Pose goalPose) {
         hood = new Hood(hardwareMap);
         flywheel = new Flywheel(hardwareMap);
@@ -122,20 +125,59 @@ public class Shooter {
     }
 
 
-//    public void updateShootingSubsystems(boolean close) {
-//        Pose currentPose = follower.getPose();
-//        Vector translationalVel = follower.getVelocity();
-//        Pose velocity = new Pose(translationalVel.getXComponent(),
-//                translationalVel.getYComponent(),
-//                follower.getAngularVelocity()
-//        );
-//
-//        ShotSolution shotSolution = ShooterSolver.solve(currentPose, velocity, goalPose.getX(), goalPose.getY(), close);
-//
-//        flywheel.setTargetAngularVelocity(shotSolution.flywheelSpeed);
-//        hood.setHoodAngle(shotSolution.hoodAngle);
-//        turret.setTurretAngle(shotSolution.turretAngle);
-//    }
+    public void updateShootingSubsystems(Pose pose, Telemetry telemetry, boolean useVelocityComp) {
+        if (!useVelocityComp) {
+            updateShootingSubsystems(pose, telemetry);
+            return;
+        }
+        boolean close = pose.getY() > transitionYValue;
+
+        Vector translationalVel = follower.getVelocity();
+        Pose velocity = new Pose(translationalVel.getXComponent(),
+                translationalVel.getYComponent(),
+                follower.getAngularVelocity()
+        );
+
+        ShooterSolver.ShotSolution shotSolution = ShooterSolver.solve(pose, velocity, goalPose.getX(), goalPose.getY(), close);
+
+        lastTurretAngle = shotSolution.turretAngle;
+
+        telemetry.addData("flywheelSpeed", Flywheel.flywheelRadiansToMotorTicks(shotSolution.flywheelSpeed));
+        telemetry.addData("hoodAngle", Math.toDegrees(shotSolution.hoodAngle));
+        telemetry.addData("Turret Angle", Math.toDegrees(shotSolution.turretAngle));
+        telemetry.addData("Goal Pose", goalPose);
+
+        flywheel.setTargetAngularVelocity(Flywheel.flywheelRadiansToMotorTicks(shotSolution.flywheelSpeed));
+        hood.setHoodAngle(shotSolution.hoodAngle);
+        turret.setTurretAngle(shotSolution.turretAngle);
+    }
+
+    public void updateTurretOnly(Pose pose, Telemetry telemetry, boolean useVelocityComp) {
+        if (!useVelocityComp) {
+            updateShootingSubsystems(pose, telemetry, false);
+            return;
+        } else if (!ShooterSolver.hasActiveSolution()) {
+            updateShootingSubsystems(pose, telemetry, true);
+            return;
+        }
+
+        Vector translationalVel = follower.getVelocity();
+        Pose velocity = new Pose(translationalVel.getXComponent(),
+                translationalVel.getYComponent(),
+                follower.getAngularVelocity()
+        );
+
+        ShooterSolver.TurretUpdate turretUpdate = ShooterSolver.updateTurretEstimate(pose, velocity);
+
+        double turretAngle = turretUpdate.turretAngle;
+
+        if (!turretUpdate.isValid) {
+            turretAngle = lastTurretAngle;
+        }
+
+        lastTurretAngle = turretAngle;
+        turret.setTurretAngle(turretAngle);
+    }
 
     public void updateShootingSubsystems(Pose pose, Telemetry telemetry) {
         boolean close = pose.getY() > transitionYValue;
@@ -151,6 +193,8 @@ public class Shooter {
         telemetry.addData("hoodAngle", Math.toDegrees(hoodAngle));
         telemetry.addData("Turret Angle", Math.toDegrees(turretAngle));
         telemetry.addData("Goal Pose", goalPose);
+
+        lastTurretAngle = turretAngle;
 
         flywheel.setTargetAngularVelocity(flywheelSpeed);
         hood.setHoodAngle(hoodAngle);
