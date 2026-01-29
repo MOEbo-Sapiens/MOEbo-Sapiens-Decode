@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.teamcode.shooter.math.ShooterSolver;
+import org.firstinspires.ftc.teamcode.shooter.math.VelocityCompensationCalculator;
 
 import smile.interpolation.LinearInterpolation;
 
@@ -17,11 +17,16 @@ public class Hood {
         hoodServo = hardwareMap.get(Servo.class, "hood");
     }
 
-    //goes from 0 -> 0.83
+    // Servo position 0 -> 0.83 maps to hood angle min -> max
     private double[] servoPositions = new double[] {0, 0.83};
-    private double[] hoodAngles = new double[] {ShooterSolver.getMinHoodAngle(), ShooterSolver.getMaxHoodAngle()};
-    private double[] launchAngles = new double[] {ShooterSolver.hoodAngleToLaunchAngle(ShooterSolver.getMinHoodAngle()),
-            ShooterSolver.hoodAngleToLaunchAngle(ShooterSolver.getMaxHoodAngle())};
+    private double[] hoodAngles = new double[] {
+            VelocityCompensationCalculator.getMinHoodAngle(),
+            VelocityCompensationCalculator.getMaxHoodAngle()
+    };
+    private double[] launchAngles = new double[] {
+            VelocityCompensationCalculator.hoodAngleToLaunchAngle(VelocityCompensationCalculator.getMinHoodAngle()),
+            VelocityCompensationCalculator.hoodAngleToLaunchAngle(VelocityCompensationCalculator.getMaxHoodAngle())
+    };
 
     LinearInterpolation hoodAngleToServo = new LinearInterpolation(hoodAngles, servoPositions);
     LinearInterpolation servoToHoodAngle = new LinearInterpolation(servoPositions, hoodAngles);
@@ -40,28 +45,23 @@ public class Hood {
     }
 
     public double getTargetLaunchAngle() {
-        return ShooterSolver.hoodAngleToLaunchAngle(targetHoodAngle);
+        return VelocityCompensationCalculator.hoodAngleToLaunchAngle(targetHoodAngle);
     }
 
     private double getCurrentPosition() {
         return hoodServo.getPosition();
     }
 
-
     public void setHoodAngle(double radians) {
-        setTargetPosition(
-            hoodAngleToServo.interpolate(radians)
-        );
+        setTargetPosition(hoodAngleToServo.interpolate(radians));
     }
 
     public void setLaunchAngle(double radians) {
-        setTargetPosition(
-            launchAngleToServo.interpolate(radians)
-        );
+        setTargetPosition(launchAngleToServo.interpolate(radians));
     }
 
     public double getCurrentLaunchAngle() {
-       return servoToLaunchAngle.interpolate(getCurrentPosition());
+        return servoToLaunchAngle.interpolate(getCurrentPosition());
     }
 
     public double getCurrentHoodAngle() {

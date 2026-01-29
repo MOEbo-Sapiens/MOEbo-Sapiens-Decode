@@ -8,34 +8,16 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.robot.Constants;
-import org.firstinspires.ftc.teamcode.shooter.math.ShooterSolver;
+import org.firstinspires.ftc.teamcode.shooter.math.VelocityCompensationCalculator;
 import org.firstinspires.ftc.teamcode.util.MathHelpers;
 
 import smile.interpolation.Interpolation;
 import smile.interpolation.LinearInterpolation;
 
+/**
+ * Shooter class using simplified VelocityCompensationCalculator
+ */
 public class Shooter {
-    //max speed is 2180 ticks / second -> correlates with roughly 5 radians per second
-    //all to red score
-
-    //FAR ZONE:
-    //  Speed: 1760, Servo Pos: 0.64, launch angle: 23.7834780759°, hood angle: 66.2167323833°
-    //AT THE TOP OF FAR ZONE: 72, 24
-
-
-    //CLOSE LERP 1:
-    //Speed: 1315, servo pos 0.36, launch angle: 35.2598227124°, hood angle: 54.7401772876°
-    // Pose: 48, 96
-
-    // Speed 1260, Servo pos 0.35, launch angle 35.6608931689°, hood angle: 54.3393172902°
-    // Pose: 72, 72
-
-    //Speed: 1040, Servo pos: 0.1, launch angle 45.9053785459°, hood angle: 44.0946214541°
-    //Pose: 96, 96
-
-    //Speed: 1030, Servo Pos: 0.08, launch angle: 46.7247081929°, hood angle: 43.2752918071°
-    //Pose: 102, 102
-
 
     public static double transitionYValue = 48;
 
@@ -43,72 +25,49 @@ public class Shooter {
         return Math.hypot(goalPose.getX() - launchPose.getX(), goalPose.getY() - launchPose.getY());
     }
 
+    // Fallback interpolation tables (used when velocity comp is off)
     private double[] closeDistances = new double[] {
             distance(new Pose(48, 96), Constants.BLUE_GOAL_POSE.mirror()),
-            distance(new Pose(72, 72), Constants.BLUE_GOAL_POSE.mirror()), //1220, angle 0.7339 rad
-            distance(new Pose(88, 85), Constants.BLUE_GOAL_POSE.mirror()), //1120, angle 0.6981 rad
-            distance(new Pose(90, 90), Constants.BLUE_GOAL_POSE.mirror()), //1078, angle 0.6981 rad
-            distance(new Pose(96, 96), Constants.BLUE_GOAL_POSE.mirror()), //1034, angle 0.6981 rad
-            distance(new Pose(102, 102), Constants.BLUE_GOAL_POSE.mirror()),//1006, angle 0.6981 rad
+            distance(new Pose(72, 72), Constants.BLUE_GOAL_POSE.mirror()),
+            distance(new Pose(88, 85), Constants.BLUE_GOAL_POSE.mirror()),
+            distance(new Pose(90, 90), Constants.BLUE_GOAL_POSE.mirror()),
+            distance(new Pose(96, 96), Constants.BLUE_GOAL_POSE.mirror()),
+            distance(new Pose(102, 102), Constants.BLUE_GOAL_POSE.mirror()),
     };
 
-    private double[] closeSpeeds = new double[] {
-            1315,
-            1220,
-            1120,
-            1078,
-            1034,
-            1006,
-    };
-
-    //hood angles
+    private double[] closeSpeeds = new double[] { 1315, 1220, 1120, 1078, 1034, 1006 };
     private double[] closeAngles = new double[] {
-            Math.toRadians(54.7401772876),
-            Math.toRadians(42.0493725847),
-            Math.toRadians(39.9981836781),
-            Math.toRadians(39.9981836781),
-            Math.toRadians(39.9981836781),
-            Math.toRadians(39.9981836781),
+            Math.toRadians(54.74), Math.toRadians(42.05), Math.toRadians(40.0),
+            Math.toRadians(40.0), Math.toRadians(40.0), Math.toRadians(40.0)
     };
-
-    Interpolation closeFlywheelSpeeds = new LinearInterpolation(closeDistances, closeSpeeds);
-    Interpolation closeHoodAngles = new LinearInterpolation(closeDistances, closeAngles);
 
     private double[] farDistances = new double[] {
             distance(new Pose(72, 24), Constants.BLUE_GOAL_POSE),
             distance(new Pose(84, 12), Constants.BLUE_GOAL_POSE)
     };
+    private double[] farSpeeds = new double[] { 1712, 1712 };
+    private double[] farAngles = new double[] { Math.toRadians(64.17), Math.toRadians(61.71) };
 
-    private double[] farSpeeds = new double[] {
-           1712,
-           1712
-    };
-
-    //hood angles
-    private double[] farAngles = new double[] {
-            Math.toRadians(64.1712730547),
-            Math.toRadians(61.7132841135)
-    };
-
+    Interpolation closeFlywheelSpeeds = new LinearInterpolation(closeDistances, closeSpeeds);
+    Interpolation closeHoodAngles = new LinearInterpolation(closeDistances, closeAngles);
     Interpolation farFlywheelSpeeds = new LinearInterpolation(farDistances, farSpeeds);
     Interpolation farHoodAngles = new LinearInterpolation(farDistances, farAngles);
 
-    public static int flywheelToleranceTicks = 25; //TODO: adjust as needed
-    public static double turretToleranceDegrees = 2; //TODO: adjust as needed
-    public static double hoodToleranceDegrees = 2; //TODO: adjust as needed
+    // Tolerances
+    public static int flywheelToleranceTicks = 25;
+    public static double turretToleranceDegrees = 2;
+    public static double hoodToleranceDegrees = 2;
 
+    // Gate positions
+    public static double openGatePosition = 0.3;
+    public static double closedGatePosition = 0.13;
 
-    public static double openGatePosition = 0.3; //TODO: Tune
-    public static double closedGatePosition = 0.13; //TODO: Tune
-
+    // Hardware
     Hood hood;
     Flywheel flywheel;
     Turret turret;
     Servo gateServo;
-
-
     Follower follower;
-
     Pose goalPose;
 
     public double lastTurretAngle;
@@ -118,88 +77,88 @@ public class Shooter {
         flywheel = new Flywheel(hardwareMap);
         turret = new Turret(hardwareMap);
         gateServo = hardwareMap.get(Servo.class, "gate");
-
         this.goalPose = goalPose;
-
         this.follower = follower;
     }
 
-
+    /**
+     * Update shooting subsystems WITH velocity compensation
+     */
     public void updateShootingSubsystems(Pose pose, Telemetry telemetry, boolean useVelocityComp) {
         if (!useVelocityComp) {
             updateShootingSubsystems(pose, telemetry);
             return;
         }
+
         boolean close = pose.getY() > transitionYValue;
 
+        // Get robot velocity from follower
         Vector translationalVel = follower.getVelocity();
-        Pose velocity = new Pose(translationalVel.getXComponent(),
+        Pose velocity = new Pose(
+                translationalVel.getXComponent(),
                 translationalVel.getYComponent(),
                 follower.getAngularVelocity()
         );
 
-        ShooterSolver.ShotSolution shotSolution = ShooterSolver.solve(pose, velocity, goalPose.getX(), goalPose.getY(), close);
+        // Calculate shot parameters using the simplified approach
+        VelocityCompensationCalculator.ShotParameters params =
+                VelocityCompensationCalculator.calculate(
+                        pose, velocity,
+                        goalPose,
+                        close
+                );
 
-        // Check if solution is valid - if not, fall back to non-velocity-comp
-        if (!shotSolution.isValid) {
-            telemetry.addData("Solver FAILED", shotSolution.errorMessage);
-            
-            // Output debug info to help diagnose the issue
-            String debugInfo = ShooterSolver.debugSolve(pose, velocity, goalPose.getX(), goalPose.getY(), close);
-            telemetry.addData("Debug", debugInfo);
-            
-            telemetry.addData("Falling back to", "non-velocity-comp");
+        // Check validity and fall back if needed
+        if (!params.isValid) {
+            telemetry.addData("VelComp FAILED", params.errorMessage);
+            telemetry.addData("Falling back to", "no velocity comp");
             updateShootingSubsystems(pose, telemetry);
             return;
         }
 
-        lastTurretAngle = shotSolution.turretAngle;
+        lastTurretAngle = params.turretAngle;
 
-        telemetry.addData("flywheelSpeed", Flywheel.flywheelRadiansToMotorTicks(shotSolution.flywheelSpeed));
-        telemetry.addData("hoodAngle", Math.toDegrees(shotSolution.hoodAngle));
-        telemetry.addData("Turret Angle", Math.toDegrees(shotSolution.turretAngle));
-        telemetry.addData("Goal Pose", goalPose);
+        // Debug telemetry
+        telemetry.addData("Zone", close ? "CLOSE" : "FAR");
+        telemetry.addData("flywheelSpeed", params.flywheelTicks);
+        telemetry.addData("hoodAngle", Math.toDegrees(params.hoodAngle));
+        telemetry.addData("Turret Angle", Math.toDegrees(params.turretAngle));
+//        telemetry.addData("Launch V", String.format("%.1f in/s", params.launchVelocity));
+//        telemetry.addData("Launch α", String.format("%.1f°", Math.toDegrees(params.launchAngle)));
 
-        flywheel.setTargetAngularVelocity(Flywheel.flywheelRadiansToMotorTicks(shotSolution.flywheelSpeed));
-        hood.setHoodAngle(shotSolution.hoodAngle);
-        turret.setTurretAngle(shotSolution.turretAngle);
+        // Command hardware
+        flywheel.setTargetAngularVelocity(params.flywheelTicks);
+        hood.setHoodAngle(params.hoodAngle);
+        turret.setTurretAngle(params.turretAngle);
     }
 
+    /**
+     * Update turret only (after initial solve) for faster loop updates
+     */
     public void updateTurretOnly(Pose pose, Telemetry telemetry, boolean useVelocityComp) {
         if (!useVelocityComp) {
             updateShootingSubsystems(pose, telemetry, false);
             return;
-        } else if (!ShooterSolver.hasActiveSolution()) {
-            updateShootingSubsystems(pose, telemetry, true);
-            return;
         }
 
-        Vector translationalVel = follower.getVelocity();
-        Pose velocity = new Pose(translationalVel.getXComponent(),
-                translationalVel.getYComponent(),
-                follower.getAngularVelocity()
-        );
-
-        ShooterSolver.TurretUpdate turretUpdate = ShooterSolver.updateTurretEstimate(pose, velocity);
-
-        double turretAngle = turretUpdate.turretAngle;
-
-        if (!turretUpdate.isValid) {
-            turretAngle = lastTurretAngle;
-        }
-
-        lastTurretAngle = turretAngle;
-        turret.setTurretAngle(turretAngle);
+        // Just recalculate everything - it's fast enough
+        // (The old ShooterSolver had caching, but the new approach is simple enough
+        //  to just recalculate every loop)
+        updateShootingSubsystems(pose, telemetry, true);
     }
 
+    /**
+     * Update shooting subsystems WITHOUT velocity compensation (fallback/simple mode)
+     */
     public void updateShootingSubsystems(Pose pose, Telemetry telemetry) {
         boolean close = pose.getY() > transitionYValue;
 
-        Interpolation flywheelInterpolation = (close) ? closeFlywheelSpeeds : farFlywheelSpeeds;
-        Interpolation hoodAngleInterpolation = (close) ? closeHoodAngles : farHoodAngles;
+        Interpolation flywheelInterpolation = close ? closeFlywheelSpeeds : farFlywheelSpeeds;
+        Interpolation hoodAngleInterpolation = close ? closeHoodAngles : farHoodAngles;
 
-        double flywheelSpeed = flywheelInterpolation.interpolate(distance(pose, goalPose));
-        double hoodAngle = hoodAngleInterpolation.interpolate(distance(pose, goalPose));
+        double dist = distance(pose, goalPose);
+        double flywheelSpeed = flywheelInterpolation.interpolate(dist);
+        double hoodAngle = hoodAngleInterpolation.interpolate(dist);
         double turretAngle = getTargetTurretAngle(pose);
 
         telemetry.addData("flywheelSpeed", flywheelSpeed);
@@ -219,19 +178,14 @@ public class Shooter {
                 goalPose.getY() - pose.getY(),
                 goalPose.getX() - pose.getX()
         );
-
         targetAngle -= pose.getHeading();
-
         targetAngle = MathHelpers.wrapAngleRadians(targetAngle);
-
         return targetAngle;
     }
 
-
-
     public boolean readyToShoot() {
         return Math.abs(flywheel.getTargetAngularVelocity() - flywheel.getCurrentAngularVel()) < flywheelToleranceTicks &&
-                Math.abs(turret.getTargetAngle() - turret.getCurrentAngle())  < Math.toRadians(turretToleranceDegrees) &&
+                Math.abs(turret.getTargetAngle() - turret.getCurrentAngle()) < Math.toRadians(turretToleranceDegrees) &&
                 Math.abs(hood.getTargetHoodAngle() - hood.getCurrentHoodAngle()) < Math.toRadians(hoodToleranceDegrees);
     }
 
@@ -242,8 +196,8 @@ public class Shooter {
 
     public void intakingPos() {
         flywheel.deactivate();
-        turret.setTurretAngle(Math.toRadians(0));
-        hood.setHoodAngle(ShooterSolver.getMinHoodAngle());
+        turret.setTurretAngle(0);
+        hood.setHoodAngle(VelocityCompensationCalculator.getMinHoodAngle());
     }
 
     public void deactivate() {
@@ -261,31 +215,12 @@ public class Shooter {
         turret.update(telemetry);
     }
 
-    public void setOpenGatePosition() {
-        gateServo.setPosition(openGatePosition);
-    }
+    public void setOpenGatePosition() { gateServo.setPosition(openGatePosition); }
+    public void setCloseGatePosition() { gateServo.setPosition(closedGatePosition); }
 
-    public void setCloseGatePosition() {
-        gateServo.setPosition(closedGatePosition);
-    }
-
-    public int getTurretTicks() {
-        return turret.getCurrentPositionTicks();
-    }
-
-    public double getTurretAngle() {
-        return turret.getCurrentAngle();
-    }
-
-    public double getFlywheelAngularVelocity() {
-        return flywheel.getCurrentAngularVel();
-    }
-
-    public double getFlywheeelTargetAngularVelocity() {
-        return flywheel.getTargetAngularVelocity();
-    }
-
-    public double getHoodAngle() {
-        return hood.getCurrentHoodAngle();
-    }
+    public int getTurretTicks() { return turret.getCurrentPositionTicks(); }
+    public double getTurretAngle() { return turret.getCurrentAngle(); }
+    public double getFlywheelAngularVelocity() { return flywheel.getCurrentAngularVel(); }
+    public double getFlywheeelTargetAngularVelocity() { return flywheel.getTargetAngularVelocity(); }
+    public double getHoodAngle() { return hood.getCurrentHoodAngle(); }
 }

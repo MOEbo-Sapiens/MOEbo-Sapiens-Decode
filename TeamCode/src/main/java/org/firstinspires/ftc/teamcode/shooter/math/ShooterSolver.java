@@ -170,8 +170,8 @@ public class ShooterSolver {
      * Empirically measured velocity ratio: v_ball = A_MAX × ω × R_flywheel
      * Calibrated from range tests - different values for close vs far zones
      */
-    private static final double A_MAX_CLOSE = 0.411; // TPS 1000-1400
-    private static final double A_MAX_FAR = 0.391;   // TPS 1500-1700
+    private static final double A_MAX_CLOSE = 0.4155; // TPS 1000-1400
+    private static final double A_MAX_FAR = 0.3906;   // TPS 1500-1700
 
     // =========================================================================
     // SOLVER PARAMETERS
