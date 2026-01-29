@@ -7,7 +7,6 @@ import com.pedropathing.util.Timer;
 
 import org.firstinspires.ftc.teamcode.robot.Constants;
 import org.firstinspires.ftc.teamcode.shooter.Flywheel;
-import org.firstinspires.ftc.teamcode.shooter.Shooter;
 import org.firstinspires.ftc.teamcode.util.Vector2D;
 import smile.interpolation.LinearInterpolation;
 
@@ -167,9 +166,12 @@ public class ShooterSolver {
     /** Combined radius for arc calculations */
     private static final double R_COMBINED = R_FLYWHEEL + R_BALL;
 
-    /** Maximum velocity ratio A_max = 2J / (7J + 2mR²) */
-    private static final double A_MAX =
-            2 * J_FLYWHEEL / (7 * J_FLYWHEEL + 2 * MASS_BALL * R_FLYWHEEL * R_FLYWHEEL);
+    /** 
+     * Empirically measured velocity ratio: v_ball = A_MAX × ω × R_flywheel
+     * Calibrated from range tests - different values for close vs far zones
+     */
+    private static final double A_MAX_CLOSE = 0.411; // TPS 1000-1400
+    private static final double A_MAX_FAR = 0.391;   // TPS 1500-1700
 
     // =========================================================================
     // SOLVER PARAMETERS
@@ -575,7 +577,7 @@ public class ShooterSolver {
         // ---------------------------------------------------------------------
 
         double turretAngle = computeTurretAngleOnly(storedHoodAngle, storedFlywheelSpeed,
-                predictedReleasePose, predictedReleaseVel, storedGoalX, storedGoalY);
+                predictedReleasePose, predictedReleaseVel, storedGoalX, storedGoalY, storedCloseZone);
 
         if (Double.isNaN(turretAngle)) {
             // Turret solve failed - return invalid
@@ -594,11 +596,11 @@ public class ShooterSolver {
      * @return Turret angle in radians, or NaN if no valid solution
      */
     private static double computeTurretAngleOnly(double thetaH, double omegaFlywheel,
-            Pose releasePose, Pose releaseVel, double goalX, double goalY) {
+            Pose releasePose, Pose releaseVel, double goalX, double goalY, boolean close) {
 
         // 1. Calculate Shooter Physics
         double launchAngle = hoodAngleToLaunchAngle(thetaH);
-        double vShooter = computeExitVelocity(thetaH, omegaFlywheel);
+        double vShooter = computeExitVelocity(thetaH, omegaFlywheel, close);
 
         // Horizontal component of shot speed
         double vHorizontal = vShooter * Math.cos(launchAngle);
@@ -714,6 +716,92 @@ public class ShooterSolver {
         storedTotalTime = 0;
     }
 
+    /**
+     * Debug method to diagnose solver issues. Call this with the same parameters as solve()
+     * and check telemetry output to understand why the solver might be failing.
+     */
+    public static String debugSolve(Pose robotPose, Pose robotVel, double goalX, double goalY, boolean close) {
+        StringBuilder debug = new StringBuilder();
+        
+        // Initialize interpolations
+        initializeInterpolations();
+        
+        // 1. Basic inputs
+        debug.append("=== INPUTS ===\n");
+        debug.append(String.format("Robot: (%.1f, %.1f, %.1f°)\n", 
+            robotPose.getX(), robotPose.getY(), Math.toDegrees(robotPose.getHeading())));
+        debug.append(String.format("Velocity: (%.1f, %.1f, %.2f rad/s)\n",
+            robotVel.getX(), robotVel.getY(), robotVel.getHeading()));
+        debug.append(String.format("Goal: (%.1f, %.1f)\n", goalX, goalY));
+        debug.append(String.format("Zone: %s\n", close ? "CLOSE" : "FAR"));
+        
+        // 2. Compute shooter center and distance
+        double cosH = Math.cos(robotPose.getHeading());
+        double sinH = Math.sin(robotPose.getHeading());
+        double shooterX = robotPose.getX() + SHOOTER_OFFSET.getX() * cosH - SHOOTER_OFFSET.getY() * sinH;
+        double shooterY = robotPose.getY() + SHOOTER_OFFSET.getX() * sinH + SHOOTER_OFFSET.getY() * cosH;
+        double dx = goalX - shooterX;
+        double dy = goalY - shooterY;
+        double distance = Math.sqrt(dx * dx + dy * dy);
+        
+        debug.append(String.format("Shooter center: (%.1f, %.1f)\n", shooterX, shooterY));
+        debug.append(String.format("Distance to goal: %.1f\"\n", distance));
+        
+        // 3. Check interpolation
+        debug.append("\n=== INTERPOLATION ===\n");
+        LinearInterpolation lerp = close ? closeLerp : farLerp;
+        double[] distances = close ? CLOSE_DISTANCES : FAR_DISTANCES;
+        
+        if (lerp == null) {
+            debug.append("ERROR: Interpolation not initialized!\n");
+        } else {
+            double minDist = distances[0], maxDist = distances[0];
+            for (double d : distances) {
+                if (d < minDist) minDist = d;
+                if (d > maxDist) maxDist = d;
+            }
+            debug.append(String.format("Calibration range: %.1f\" - %.1f\"\n", minDist, maxDist));
+            debug.append(String.format("Distance in range: %s\n", 
+                (distance >= minDist && distance <= maxDist) ? "YES" : "NO - will be clamped"));
+            
+            double omega = flywheelSpeedFromDistance(distance, close);
+            debug.append(String.format("Flywheel speed: %.1f rad/s (%.0f ticks)\n", 
+                omega, omega / (2 * Math.PI * 1.4) * 28));
+        }
+        
+        // 4. Check physics at MIN_HOOD_ANGLE
+        debug.append("\n=== PHYSICS (at min hood) ===\n");
+        double thetaH = MIN_HOOD_ANGLE;
+        double A_MAX = close ? A_MAX_CLOSE : A_MAX_FAR;
+        debug.append(String.format("A_MAX: %.4f\n", A_MAX));
+        
+        double omega = flywheelSpeedFromDistance(distance, close);
+        double vExit = A_MAX * omega * R_FLYWHEEL;
+        double launchAngle = LAUNCH_ANGLE_OFFSET - thetaH;
+        double vHorizontal = vExit * Math.cos(launchAngle);
+        double vVertical = vExit * Math.sin(launchAngle);
+        
+        debug.append(String.format("Exit velocity: %.1f in/s\n", vExit));
+        debug.append(String.format("Launch angle: %.1f°\n", Math.toDegrees(launchAngle)));
+        debug.append(String.format("V_horizontal: %.1f in/s\n", vHorizontal));
+        debug.append(String.format("V_vertical: %.1f in/s\n", vVertical));
+        
+        // 5. Try to compute full state
+        debug.append("\n=== SOLVER TEST ===\n");
+        ShotState state = computeFullState(thetaH, robotPose, robotVel, goalX, goalY, close);
+        if (state == null) {
+            debug.append("computeFullState returned NULL\n");
+            debug.append("Likely cause: solveInnerLoop or solveTurretAngle failed\n");
+        } else if (!state.turretValid) {
+            debug.append("Turret solution INVALID\n");
+        } else {
+            debug.append(String.format("State OK! Residual: %.2f\"\n", state.residual));
+            debug.append(String.format("Turret angle: %.1f°\n", Math.toDegrees(state.turretAngle)));
+        }
+        
+        return debug.toString();
+    }
+
     // =========================================================================
     // COMPUTE FULL STATE FOR A GIVEN HOOD ANGLE
     // =========================================================================
@@ -735,7 +823,7 @@ public class ShooterSolver {
         // TURRET COMPENSATION
         // ---------------------------------------------------------------------
 
-        if (!solveTurretAngle(state, thetaH, goalX, goalY)) {
+        if (!solveTurretAngle(state, thetaH, goalX, goalY, close)) {
             return null;
         }
 
@@ -777,7 +865,7 @@ public class ShooterSolver {
         for (int i = 0; i < MAX_INNER_ITERATIONS; i++) {
 
             // Compute contact time
-            double tContact = computeContactTime(thetaH, omegaF);
+            double tContact = computeContactTime(thetaH, omegaF, close);
             double tTotal = T_INIT + tContact;
 
             // Compute release pose (Predict robot motion during shot windup/transit)
@@ -840,11 +928,11 @@ public class ShooterSolver {
     // =========================================================================
 
     private static boolean solveTurretAngle(ShotState state, double thetaH, double goalX,
-            double goalY) {
+            double goalY, boolean close) {
 
         // 1. Calculate Shooter Physics
         double launchAngle = hoodAngleToLaunchAngle(thetaH);
-        double vShooter = computeExitVelocity(thetaH, state.omegaFlywheel);
+        double vShooter = computeExitVelocity(thetaH, state.omegaFlywheel, close);
 
         // Horizontal component of shot speed (relative to robot)
         double vHorizontal = vShooter * Math.cos(launchAngle);
@@ -1040,7 +1128,8 @@ public class ShooterSolver {
         return LAUNCH_ANGLE_OFFSET - hoodAngle;
     }
 
-    private static double computeVelocityRatio(double thetaH) {
+    private static double computeVelocityRatio(double thetaH, boolean close) {
+        double A_MAX = close ? A_MAX_CLOSE : A_MAX_FAR;
         double thetaArc = thetaH - THETA_FIRST_CONTACT;
         if (thetaArc <= 0)
             return 0;
@@ -1049,11 +1138,12 @@ public class ShooterSolver {
         return A_MAX * Math.sqrt(thetaArc / THETA_SLIP);
     }
 
-    private static double computeExitVelocity(double thetaH, double omegaFlywheel) {
-        return computeVelocityRatio(thetaH) * omegaFlywheel * R_FLYWHEEL;
+    private static double computeExitVelocity(double thetaH, double omegaFlywheel, boolean close) {
+        return computeVelocityRatio(thetaH, close) * omegaFlywheel * R_FLYWHEEL;
     }
 
-    private static double computeContactTime(double thetaH, double omegaFlywheel) {
+    private static double computeContactTime(double thetaH, double omegaFlywheel, boolean close) {
+        double A_MAX = close ? A_MAX_CLOSE : A_MAX_FAR;
         double thetaArc = thetaH - THETA_FIRST_CONTACT;
         if (thetaArc <= 0)
             return 0;
@@ -1079,14 +1169,31 @@ public class ShooterSolver {
      */
     private static double flywheelSpeedFromDistance(double distance, boolean close) {
         LinearInterpolation lerp = close ? closeLerp : farLerp;
+        double[] distances = close ? CLOSE_DISTANCES : FAR_DISTANCES;
 
         // Fallback if interpolation not initialized (empty calibration data)
-        if (lerp == null) {
+        if (lerp == null || distances.length < 2) {
             // Return a reasonable default - this should be replaced with actual calibration
-            return 50.0 + distance; // TODO: find a default for close and far, though should never be needed
+            return 50.0 + distance;
         }
 
-        return lerp.interpolate(distance);
+        // Find min and max distances in the array (may not be sorted)
+        double minDist = distances[0];
+        double maxDist = distances[0];
+        for (double d : distances) {
+            if (d < minDist) minDist = d;
+            if (d > maxDist) maxDist = d;
+        }
+
+        // Clamp distance to calibration range to avoid extrapolation issues
+        double clampedDistance = clamp(distance, minDist, maxDist);
+        
+        try {
+            return lerp.interpolate(clampedDistance);
+        } catch (Exception e) {
+            // If interpolation fails for any reason, return a reasonable default
+            return 350.0; // ~1100 motor ticks
+        }
     }
 
     /**

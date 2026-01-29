@@ -140,6 +140,19 @@ public class Shooter {
 
         ShooterSolver.ShotSolution shotSolution = ShooterSolver.solve(pose, velocity, goalPose.getX(), goalPose.getY(), close);
 
+        // Check if solution is valid - if not, fall back to non-velocity-comp
+        if (!shotSolution.isValid) {
+            telemetry.addData("Solver FAILED", shotSolution.errorMessage);
+            
+            // Output debug info to help diagnose the issue
+            String debugInfo = ShooterSolver.debugSolve(pose, velocity, goalPose.getX(), goalPose.getY(), close);
+            telemetry.addData("Debug", debugInfo);
+            
+            telemetry.addData("Falling back to", "non-velocity-comp");
+            updateShootingSubsystems(pose, telemetry);
+            return;
+        }
+
         lastTurretAngle = shotSolution.turretAngle;
 
         telemetry.addData("flywheelSpeed", Flywheel.flywheelRadiansToMotorTicks(shotSolution.flywheelSpeed));
