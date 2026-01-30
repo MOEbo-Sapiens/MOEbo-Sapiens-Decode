@@ -25,8 +25,11 @@ public class IntakingState implements State {
     private Gamepad gamepad2;
 
     private Command joystickToIntake;
+//    private Command updateTurret;
 
 //    private Command transition;
+
+    private Command updateShooter;
 
     private boolean transitioning = false;
 
@@ -38,7 +41,7 @@ public class IntakingState implements State {
 
     public void initialize(Robot robot, State prevState) {
         schedule(robot.closeGate());
-        schedule(robot.shooterIntakingPos());
+        schedule(robot.deactivateShooter());
 
 //        transition = bind(() -> gamepad1.a).and(() -> !Constants.lastOpModeWasAuto).and(() -> !transitioning)
 //                .rise(
@@ -50,6 +53,7 @@ public class IntakingState implements State {
 //                        )
 //                );
 
+        updateShooter = robot.updateShootingSubsystems();
 
 
         joystickToIntake = robot.joysticksToIntakePower(
@@ -57,8 +61,11 @@ public class IntakingState implements State {
                 () -> gamepad1.right_trigger
         );
 
+//        updateTurret = robot.updateTurret();
+
         if (!Constants.lastOpModeWasAuto) {
             schedule(joystickToIntake);
+//            schedule(updateTurret);
         }
 
         transitioning = false;
@@ -68,6 +75,7 @@ public class IntakingState implements State {
         if (gamepad1.aWasPressed() && !Constants.lastOpModeWasAuto && !transitioning) {
             transitioning = true;
             cancel(joystickToIntake);
+            cancel(updateShooter);
             schedule(
                     robot.setIntakePower(0),
                     instant(() -> robot.setState(States.SHOOTING))

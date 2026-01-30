@@ -112,6 +112,10 @@ public class Robot {
         return instant(() -> shooter.deactivate());
     }
 
+    public Command deactivateFlywheel() {
+        return instant(() -> shooter.deactivateFlywheel());
+    }
+
     public Command shooterIntakingPos() {
         return instant(() -> shooter.intakingPos());
     }
@@ -146,12 +150,17 @@ public class Robot {
 
     public Command updateShootingSubsystems() {
         return infinite(() -> {
-            if (!currentlyShooting) {
                 shooter.updateShootingSubsystems(follower.getPose(), telemetry, useVelocityComp);
-            } else {
-                shooter.updateTurretOnly(follower.getPose(), telemetry, useVelocityComp);
-            }
+//            if (!currentlyShooting) {
+//                shooter.updateShootingSubsystems(follower.getPose(), telemetry, useVelocityComp);
+//            } else {
+//                shooter.updateTurretOnly(follower.getPose(), telemetry, useVelocityComp);
+//            }
         });
+    }
+
+    public Command updateTurret() {
+        return infinite(() -> shooter.updateTurretOnly(follower.getPose(), telemetry, useVelocityComp));
     }
 
     public boolean readyToShoot() {
@@ -232,19 +241,32 @@ public class Robot {
                 openGate(),
                 instant(() -> currentlyShooting = true),
                 setIntakePower(1),
-                waitMs(100),
+                waitMs(200),
                 closeGate(),
-                waitMs(100),
+                waitMs(200),
                 instant(() -> currentlyShooting = false)
         );
     }
 
     public Command shootMotif() {
+        boolean close = follower.getPose().getY() > Shooter.transitionYValue;
+
+        if (close) {
+            return sequential(
+                    openGate(),
+                    instant(() -> currentlyShooting = true),
+                    setIntakePower(1),
+                    waitMs(500),
+                    closeGate(),
+                    waitMs(100),
+                    instant(() -> currentlyShooting = false)
+            );
+        }
         return sequential(
                 shoot(),
-                waitUntil(() -> readyToShoot()).raceWith(waitMs(1000)),
+                waitUntil(() -> readyToShoot()).raceWith(waitMs(150)),
                 shoot(),
-                waitUntil(() -> readyToShoot()).raceWith(waitMs(1000)),
+                waitUntil(() -> readyToShoot()).raceWith(waitMs(150)),
                 shoot()
         );
     }

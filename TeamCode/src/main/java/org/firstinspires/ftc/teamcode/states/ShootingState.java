@@ -51,7 +51,7 @@ public class ShootingState implements State {
                     sequential(
                             waitUntil(robot::readyToShoot).raceWith(infinite(() -> {
                                 telemetry.addData("Waiting to shoot...", "");
-                            })).raceWith(waitMs(5000)),
+                            })).raceWith(waitMs(300)),
                             robot.shootMotif(),
                             instant(() -> cancel(updateShooter)),
                             instant(() -> robot.setState(States.INTAKING))

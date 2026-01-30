@@ -53,8 +53,8 @@ public class TurretTestNew extends LinearOpMode {
                 target = Math.toRadians(0);
             }
 
-//            turret.setTurretAngle(target);
-//            turret.update(telemetry);
+            turret.setTurretAngle(target);
+            turret.update(telemetry);
 
             telemetry.addData("Current Angle", Math.toDegrees(turret.getCurrentAngle()));
             telemetry.addData("Target Angle", Math.toDegrees(turret.getTargetAngle()));
