@@ -256,9 +256,8 @@ public class Robot {
                     openGate(),
                     instant(() -> currentlyShooting = true),
                     setIntakePower(1),
-                    waitMs(500),
+                    waitMs(750),
                     closeGate(),
-                    waitMs(100),
                     instant(() -> currentlyShooting = false)
             );
         }
