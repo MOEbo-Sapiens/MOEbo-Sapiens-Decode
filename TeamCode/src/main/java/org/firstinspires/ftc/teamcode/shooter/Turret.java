@@ -62,7 +62,7 @@ public class Turret {
     }
 
     public int getCurrentPositionTicks() {
-        return turretMotor.getCurrentPosition() + turretOffset;
+        return turretMotor.getCurrentPosition() - turretOffset;
     }
 
     /**

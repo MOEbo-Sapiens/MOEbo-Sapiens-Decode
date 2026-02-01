@@ -44,7 +44,7 @@ public class AngleSwerve extends Swerve {
         }
 
 
-        angle = (driveVector.getMagnitude() > 0.1) ? driveVector.getTheta() : angle;
+        angle = (driveVector.getMagnitude() > 0.15) ? driveVector.getTheta() : angle;
         telemetry.addData("Joystick Angle", Math.toDegrees(angle));
 
         double headingPower = -calculateHeadingPower(angle, follower.getHeading());

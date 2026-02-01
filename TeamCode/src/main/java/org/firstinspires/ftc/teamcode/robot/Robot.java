@@ -148,6 +148,10 @@ public class Robot {
         shooter.update(telemetry);
     }
 
+    public Command setTurretPos(double angle) {
+        return instant(() -> shooter.setTurretAngle(angle));
+    }
+
     public Command updateShootingSubsystems() {
         return infinite(() -> {
                 shooter.updateShootingSubsystems(follower.getPose(), telemetry, useVelocityComp);
@@ -256,7 +260,7 @@ public class Robot {
                     openGate(),
                     instant(() -> currentlyShooting = true),
                     setIntakePower(1),
-                    waitMs(750),
+                    waitMs(1000),
                     closeGate(),
                     instant(() -> currentlyShooting = false)
             );

@@ -61,7 +61,7 @@ public class Shooter {
 
     // Gate positions
     public static double openGatePosition = 0.3;
-    public static double closedGatePosition = 0.11;
+    public static double closedGatePosition = 0.09;
 
     // Hardware
     Hood hood;
@@ -224,6 +224,10 @@ public class Shooter {
         flywheel.setTargetAngularVelocity(flywheelSpeed);
         hood.setHoodAngle(hoodAngle);
         turret.setTurretAngle(turretAngle);
+    }
+
+    public void setTurretAngle(double angle) {
+        turret.setTurretAngle(angle);
     }
 
     public double getTargetTurretAngle(Pose pose) {
