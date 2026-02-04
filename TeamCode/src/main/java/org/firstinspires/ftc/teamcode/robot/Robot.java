@@ -253,25 +253,27 @@ public class Robot {
     }
 
     public Command shootMotif() {
-        boolean close = follower.getPose().getY() > Shooter.transitionYValue;
+        return shootMotif(false);
+    }
 
-        if (close) {
-            return sequential(
-                    openGate(),
-                    instant(() -> currentlyShooting = true),
-                    setIntakePower(1),
-                    waitMs(1000),
-                    closeGate(),
-                    instant(() -> currentlyShooting = false)
-            );
-        }
+    public Command shootMotif(boolean auto) {
         return sequential(
-                shoot(),
-                waitUntil(() -> readyToShoot()).raceWith(waitMs(150)),
-                shoot(),
-                waitUntil(() -> readyToShoot()).raceWith(waitMs(150)),
-                shoot()
+                openGate(),
+                instant(() -> currentlyShooting = true),
+                setIntakePower(1),
+                waitMs((auto) ? 600 : 1000),
+                closeGate(),
+                instant(() -> currentlyShooting = false)
         );
+//        boolean close = follower.getPose().getY() > Shooter.transitionYValue;
+//        boolean close = true;
+//        return sequential(
+//                shoot(),
+//                waitUntil(() -> readyToShoot()).raceWith(waitMs(150)),
+//                shoot(),
+//                waitUntil(() -> readyToShoot()).raceWith(waitMs(150)),
+//                shoot()
+//        );
     }
 
     public Command closeGate() {

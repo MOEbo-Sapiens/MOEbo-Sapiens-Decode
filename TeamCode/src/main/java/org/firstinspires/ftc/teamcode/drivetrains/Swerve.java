@@ -33,8 +33,16 @@ public class Swerve implements Drivetrain {
         //
         if (fieldCentric) {
             //TODO: Reverse to blue when needed
-            double theta = (Constants.color == Constants.Color.RED) ? (-follower.getHeading()) :
-                    MathHelpers.wrapAngleRadians(-follower.getHeading() + Math.toRadians(180));
+            double theta = 0;
+
+            if (Constants.color == Constants.Color.RED) {
+                theta = -follower.getHeading();
+            } else if (Constants.color == Constants.Color.BLUE) {
+                theta = MathHelpers.wrapAngleRadians(-follower.getHeading() + Math.toRadians(180));
+            } else if (Constants.color == Constants.Color.AUDIENCE) {
+                theta = MathHelpers.wrapAngleRadians(-follower.getHeading() + Math.toRadians(90));
+            }
+
             double cos = Math.cos(theta);
             double sin = Math.sin(theta);
             double strafeRot = strafe * cos - forward * sin;

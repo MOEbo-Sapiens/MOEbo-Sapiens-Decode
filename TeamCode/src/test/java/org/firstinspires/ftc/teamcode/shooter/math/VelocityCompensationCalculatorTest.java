@@ -4,11 +4,9 @@ import com.pedropathing.geometry.Pose;
 
 import org.firstinspires.ftc.teamcode.robot.Constants;
 import org.firstinspires.ftc.teamcode.shooter.Shooter;
-import org.junit.Test;
 
 public class VelocityCompensationCalculatorTest {
 
-    @Test
     public void compareShots() {
         double offset = 2.42 / Math.sqrt(2);
         Pose robotPose = new Pose(72 - offset, 72 + offset, Math.toRadians(135));

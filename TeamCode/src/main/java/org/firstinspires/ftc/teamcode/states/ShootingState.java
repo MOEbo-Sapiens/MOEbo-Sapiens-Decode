@@ -33,6 +33,7 @@ public class ShootingState implements State {
     }
 
     public void initialize(Robot robot, State prevState) {
+        schedule(robot.setIntakePower(0));
         schedule(robot.activateShooter());
         schedule(robot.openGate());
         updateShooter = robot.updateShootingSubsystems();

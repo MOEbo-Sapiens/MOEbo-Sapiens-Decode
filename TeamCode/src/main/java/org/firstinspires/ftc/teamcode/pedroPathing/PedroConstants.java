@@ -107,7 +107,7 @@ public class PedroConstants {
                 "sm3", "ss3", "se3",
                 new PIDFCoefficients(kP, 0, kD, kFBack),
                 DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.FORWARD,
-                34.1549725442, new Pose(-305.86624, 311.4),
+                180, new Pose(-305.86624, 311.4),
                 0.029, 3.307,
                 false
         );
@@ -128,8 +128,19 @@ public class PedroConstants {
     }
 
     //TODO: TUNE THESE, CAN MAKE A HUGE DIFF
-    public static PathConstraints pathConstraints = new PathConstraints(0.95, 100, 1, 1);
+//    public static PathConstraints pathConstraints = new PathConstraints(0.95, 100, 1, 1);
+    public static PathConstraints pathConstraints =
+            new PathConstraints(0.9,
+                    0.5,
+                    0.5,
+                    0.01,
+                    100,
+                    1,
+                    10,
+                    1);
 
+    //default
+    //public static PathConstraints defaultConstraints = new PathConstraints(0.995, 0.1, 0.1, 0.007, 100, 1, 10, 1);
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .pathConstraints(pathConstraints)

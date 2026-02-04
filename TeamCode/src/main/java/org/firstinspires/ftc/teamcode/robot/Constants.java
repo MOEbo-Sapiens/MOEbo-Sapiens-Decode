@@ -11,7 +11,8 @@ public class Constants {
     //public static Pose RED_GOAL_POSE = new Pose(134, 134, Math.toRadians(0));
     public enum Color {
         BLUE,
-        RED
+        RED,
+        AUDIENCE
     }
 
     public static Color color = Color.BLUE;

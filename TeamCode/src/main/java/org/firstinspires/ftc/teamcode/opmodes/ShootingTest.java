@@ -1,12 +1,19 @@
 package org.firstinspires.ftc.teamcode.opmodes;
 
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.drivetrains.Drivetrain;
+import org.firstinspires.ftc.teamcode.pedroPathing.PedroConstants;
+import org.firstinspires.ftc.teamcode.robot.Constants;
+import org.firstinspires.ftc.teamcode.robot.Drivetrains;
 import org.firstinspires.ftc.teamcode.robot.Intake;
 import org.firstinspires.ftc.teamcode.shooter.Flywheel;
 import org.firstinspires.ftc.teamcode.shooter.Hood;
+import org.firstinspires.ftc.teamcode.shooter.Turret;
 
 import java.util.List;
 
@@ -15,16 +22,31 @@ public class ShootingTest extends LinearOpMode {
     Flywheel flywheel;
     Hood hood;
     Intake intake;
+    Turret turret;
 
     double flywheelTarget = 1000;
     double hoodTarget = 0;
+    double turretTarget = 0;
+
+    Drivetrain drivetrain;
+    Follower follower;
 
 
     @Override
     public void runOpMode() throws InterruptedException {
+        Constants.color = Constants.Color.AUDIENCE;
+
+        follower =  PedroConstants.createFollower(hardwareMap);
+        Pose startPose = new Pose(20.8, 124.1, Math.toRadians(234));
+        startPose = startPose.mirror();
+        follower.setPose(startPose);
+        drivetrain = Drivetrains.SWERVE.build(follower, telemetry);
+
+
         flywheel = new Flywheel(hardwareMap);
         hood = new Hood(hardwareMap);
         intake = new Intake(hardwareMap);
+        turret = new Turret(hardwareMap);
 
         List<LynxModule> allHubs = hardwareMap.getAll(LynxModule.class);
         for (LynxModule hub : allHubs) {
@@ -82,6 +104,10 @@ public class ShootingTest extends LinearOpMode {
             flywheel.setTargetAngularVelocity(flywheelTarget);
             flywheel.update();
             hood.setTargetPosition(hoodTarget);
+            turret.setTurretAngle(turretTarget);
+            turret.update(telemetry);
+            follower.update();
+            drivetrain.update(gamepad1);
 
             telemetry.addData("Current Angular Vel", flywheel.getCurrentAngularVel());
             telemetry.addData("Target Angular Vel", flywheel.getTargetAngularVelocity());
@@ -90,6 +116,7 @@ public class ShootingTest extends LinearOpMode {
             telemetry.addData("\nCurrent Launch angle", hood.getCurrentLaunchAngle());
             telemetry.addData("Target Launch angle", hood.getTargetLaunchAngle());
             telemetry.addData("\nCurrent Hood Servo Position", hoodTarget);
+            telemetry.addData("\n pose", follower.getPose());
             telemetry.update();
         }
     }
