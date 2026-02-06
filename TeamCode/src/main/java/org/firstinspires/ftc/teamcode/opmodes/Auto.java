@@ -33,14 +33,14 @@ public abstract class Auto extends LinearOpMode {
     private Command updateShooter;
 
     protected Pose startPose = new Pose(20.8, 124.1, Math.toRadians(234)); //TODO: actually determine
-    protected Pose shootingPose = new Pose(54, 83, Math.toRadians(180));
+    protected Pose shootingPose = new Pose(55, 83, Math.toRadians(180));
     protected Pose middlePickupPose = new Pose(16, 58, Math.toRadians(180));
     protected Pose middlePickupControlPoint = new Pose(59, 48);
     protected Pose closePickupPose = new Pose(24, 85, Math.toRadians(180));
     protected Pose gateClearControlPoint = new Pose(55, 65);
     protected Pose gateClearPose = new Pose(22.5, 65.78, Math.toRadians(123.4));
     protected Pose gatePickupControlPoint = new Pose(25, 57);
-    protected Pose gatePickupPose = new Pose(17, 53, Math.toRadians(123.4));
+    protected Pose gatePickupPose = new Pose(17, 53, Math.toRadians(150));
     protected Pose farPickupPose = new Pose(16, 35, Math.toRadians(180));
     protected Pose farPickupControlPoint = new Pose(72, 20);
 //    protected Pose cornerPose = new Pose(15, 10, Math.toRadians(270));
@@ -73,43 +73,60 @@ public abstract class Auto extends LinearOpMode {
 //        robot.getFollower().setMaxPower(0.9);
         updateShooter = robot.updateShootingSubsystems();
 
+        double shootTime = 750;
+
         schedule(sequential(
                 //Shoot preload
                 parallel(
                         follow(robot.getFollower(), shootPreloads),
                         sequential(
                                 robot.setIntakePower(0.4),
-                                waitMs(600),
+                                waitMs(200),
                                 setShooting()
                         )
                 ),
 //                waitMs(300),
-                shootAndSetIntaking(),
 
-                //pickup and shoot middle
                 parallel(
-                        follow(robot.getFollower(), pickupMiddle),
+                        shootAndSetIntaking(),
+                        //pickup and shoot middle
                         sequential(
-                                waitMs(500),
-                                robot.setIntakePower(1)
+                                waitMs(shootTime),
+                                parallel(
+                                        follow(robot.getFollower(), pickupMiddle),
+                                        sequential(
+                                                waitMs(700),
+                                                robot.setIntakePower(1)
+                                        )
+                                )
                         )
                 ),
 //                waitMs(600),
                 parallel(
                         follow(robot.getFollower(), shootMiddle),
                         sequential(
-                                waitMs(500),
+                                waitMs(100),
                                 setShooting()
                         )
                 ),
 //                waitMs(200),
-                shootAndSetIntaking(),
 
 
-                //first gate clear / pickup + shoot
-                follow(robot.getFollower(), clearGate1),
-                waitUntil(() -> robot.getFollower().getCurrentTValue() > 0.75),
-                instant(() -> robot.getFollower().breakFollowing()),
+                parallel(
+                        shootAndSetIntaking(),
+                        //first gate clear / pickup + shoot
+                        sequential(
+                                waitMs(shootTime),
+                                follow(robot.getFollower(), clearGate1)
+//                                parallel(
+//                                        follow(robot.getFollower(), clearGate1),
+//                                        sequential(
+//                                                waitUntil(() -> robot.getFollower().getCurrentTValue() > 0.85),
+//                                                instant(() -> robot.getFollower().breakFollowing())
+//                                        )
+//                                )
+                        )
+                ),
                 robot.setIntakePower(1),
 //                waitMs(500),
 
@@ -128,9 +145,14 @@ public abstract class Auto extends LinearOpMode {
                 waitMs(750),
 
                 //second gate clear / pickup + shoot
-                waitUntil(() -> robot.getFollower().getCurrentTValue() > 0.75),
-                instant(() -> robot.getFollower().breakFollowing()),
                 follow(robot.getFollower(), clearGate2),
+//                parallel(
+//                        follow(robot.getFollower(), clearGate2),
+//                        sequential(
+//                                waitUntil(() -> robot.getFollower().getCurrentTValue() > 0.85),
+//                                instant(() -> robot.getFollower().breakFollowing())
+//                        )
+//                ),
                 robot.setIntakePower(1),
 //                waitMs(500),
 
@@ -145,14 +167,19 @@ public abstract class Auto extends LinearOpMode {
                         )
                 ),
 //                waitMs(200),
-                shootAndSetIntaking(),
 
-                //shoot and pickup close
                 parallel(
-                        follow(robot.getFollower(), pickupClose),
+                        shootAndSetIntaking(),
+                        //shoot and pickup close
                         sequential(
-                                waitMs(750),
-                                robot.setIntakePower(1)
+                                waitMs(shootTime),
+                                parallel(
+                                        follow(robot.getFollower(), pickupClose),
+                                        sequential(
+                                                waitMs(750),
+                                                robot.setIntakePower(1)
+                                        )
+                                )
                         )
                 ),
                 waitMs(300),
@@ -166,20 +193,25 @@ public abstract class Auto extends LinearOpMode {
                         )
                 ),
 //                waitMs(200),
-                shootAndSetIntaking(),
 
-                //shoot and pickup far
                 parallel(
-                        follow(robot.getFollower(), pickupFar),
+                        shootAndSetIntaking(),
+                        //shoot and pickup far
                         sequential(
-                                waitMs(500),
-                                robot.setIntakePower(1)
+                                waitMs(shootTime),
+                                parallel(
+                                        follow(robot.getFollower(), pickupFar),
+                                        sequential(
+                                                waitMs(700),
+                                                robot.setIntakePower(1)
+                                        )
+                                )
                         )
                 ),
 //                waitMs(600),
                 parallel(
                         sequential(
-                                waitMs(1250),
+                                waitMs(1000),
                                 setShooting()
                         ),
                         follow(robot.getFollower(), shootFar)
@@ -224,10 +256,10 @@ public abstract class Auto extends LinearOpMode {
 
     private Command shootAndSetIntaking() {
         return sequential(
-                        waitUntil(robot::readyToShoot).raceWith(infinite(() -> {
-                            telemetry.addData("Waiting to shoot...", "");
-                        })).raceWith(waitMs(500)),
-                        robot.shootMotif(true),
+//                        waitUntil(robot::readyToShoot).raceWith(infinite(() -> {
+//                            telemetry.addData("Waiting to shoot...", "");
+//                        })).raceWith(waitMs(500)),
+                        robot.shootMotif(500),
                         instant(() -> cancel(updateShooter)),
                         instant(() -> robot.setState(States.INTAKING))
                 );
@@ -237,6 +269,7 @@ public abstract class Auto extends LinearOpMode {
         shootPreloads = robot.getFollower().pathBuilder()
                 .addPath(new BezierLine(startPose, shootingPose))
                 .setLinearHeadingInterpolation(startPose.getHeading(), shootingPose.getHeading())
+                .setTValueConstraint(0.8)
                 .build();
 
         pickupMiddle = robot.getFollower().pathBuilder()
@@ -258,6 +291,7 @@ public abstract class Auto extends LinearOpMode {
                         gateClearControlPoint,
                         gateClearPose
                 )).setLinearHeadingInterpolation(shootingPose.getHeading(), gateClearPose.getHeading())
+                .setTValueConstraint(0.8)
                 .build();
 
 //        pickupGate = robot.getFollower().pathBuilder()
@@ -269,13 +303,13 @@ public abstract class Auto extends LinearOpMode {
 
         pickupGate = robot.getFollower().pathBuilder()
                 .addPath(new BezierCurve(gateClearPose, gatePickupControlPoint, gatePickupPose))
-                .setConstantHeadingInterpolation(gateClearPose.getHeading())
+                .setLinearHeadingInterpolation(gateClearPose.getHeading(), gatePickupPose.getHeading())
                 .build();
 
         shootGate1 = robot.getFollower().pathBuilder()
                 .addPath(new BezierLine(gatePickupPose,
                         shootingPose
-                )).setConstantHeadingInterpolation(gateClearPose.getHeading())
+                )).setLinearHeadingInterpolation(gatePickupPose.getHeading(), gateClearPose.getHeading())
                 .build();
 
 
@@ -284,12 +318,13 @@ public abstract class Auto extends LinearOpMode {
                         gateClearControlPoint,
                         gateClearPose
                 )).setConstantHeadingInterpolation(gateClearPose.getHeading())
+                .setTValueConstraint(0.8)
                 .build();
 
         shootGate2 = robot.getFollower().pathBuilder()
                 .addPath(new BezierLine(gatePickupPose,
                         shootingPose
-                )).setLinearHeadingInterpolation(gateClearPose.getHeading(), shootingPose.getHeading())
+                )).setLinearHeadingInterpolation(gatePickupPose.getHeading(), shootingPose.getHeading())
                 .build();
 
 

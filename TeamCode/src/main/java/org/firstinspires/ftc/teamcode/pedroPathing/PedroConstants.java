@@ -70,8 +70,8 @@ public class PedroConstants {
     // P=0.00645 D=0.00019
     // P=0.00549 D=0.00028
 
-    private static double kP = 0.0055;
-    private static double kD = 0.00015;
+    private static double kP = 0.0055 * 180/Math.PI;
+    private static double kD = 0.00015 * 180/Math.PI;
     private static double kFFront = 0.0130;
     private static double kFBack = 0.0190;
 
@@ -80,8 +80,8 @@ public class PedroConstants {
                 hardwareMap,
                 "sm2", "ss2", "se2",
                 new PIDFCoefficients(kP, 0, kD, kFFront),
-                DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.FORWARD,
-                275.1546707504, new Pose(305.86624, 311.4),
+                DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.REVERSE,
+                Math.toRadians(275.1546707504), new Pose(305.86624, 311.4),
                 0.025, 3.290,
                 false
         );
@@ -93,8 +93,8 @@ public class PedroConstants {
                 hardwareMap,
                 "sm1", "ss1", "se1",
                 new PIDFCoefficients(kP, 0, kD, kFFront),
-                DcMotorSimple.Direction.FORWARD, DcMotorSimple.Direction.FORWARD,
-                346.56880733944956, new Pose(305.86624, -311.4),
+                DcMotorSimple.Direction.FORWARD, DcMotorSimple.Direction.REVERSE,
+                Math.toRadians(346.56880733944956), new Pose(305.86624, -311.4),
                 0.018, 3.288,
                 false
         );
@@ -106,8 +106,8 @@ public class PedroConstants {
                 hardwareMap,
                 "sm3", "ss3", "se3",
                 new PIDFCoefficients(kP, 0, kD, kFBack),
-                DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.FORWARD,
-                180, new Pose(-305.86624, 311.4),
+                DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.REVERSE,
+                Math.toRadians(180), new Pose(-305.86624, 311.4),
                 0.029, 3.307,
                 false
         );
@@ -119,8 +119,8 @@ public class PedroConstants {
                 hardwareMap,
                 "sm0", "ss0", "se0",
                 new PIDFCoefficients(kP, 0, kD, kFBack),
-                DcMotorSimple.Direction.FORWARD, DcMotorSimple.Direction.FORWARD,
-                288.7557042896, new Pose(-305.86624, -311.4),
+                DcMotorSimple.Direction.FORWARD, DcMotorSimple.Direction.REVERSE,
+                Math.toRadians(288.7557042896), new Pose(-305.86624, -311.4),
                 0.014, 3.301,
                 false
         );
@@ -131,10 +131,10 @@ public class PedroConstants {
 //    public static PathConstraints pathConstraints = new PathConstraints(0.95, 100, 1, 1);
     public static PathConstraints pathConstraints =
             new PathConstraints(0.9,
-                    0.5,
-                    0.5,
-                    0.01,
-                    100,
+                    1,
+                    1,
+                    0.03,
+                    50,
                     1,
                     10,
                     1);

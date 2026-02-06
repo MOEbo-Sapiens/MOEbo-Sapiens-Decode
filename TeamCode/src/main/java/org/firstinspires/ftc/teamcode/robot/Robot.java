@@ -253,15 +253,15 @@ public class Robot {
     }
 
     public Command shootMotif() {
-        return shootMotif(false);
+        return shootMotif(1000);
     }
 
-    public Command shootMotif(boolean auto) {
+    public Command shootMotif(int shootingTime) {
         return sequential(
                 openGate(),
                 instant(() -> currentlyShooting = true),
                 setIntakePower(1),
-                waitMs((auto) ? 600 : 1000),
+                waitMs(shootingTime),
                 closeGate(),
                 instant(() -> currentlyShooting = false)
         );

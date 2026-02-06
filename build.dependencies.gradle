@@ -6,9 +6,9 @@ repositories {
     mavenLocal()
 }
 
-configurations.configureEach {
-    resolutionStrategy.cacheChangingModulesFor 5, 'minutes'
-}
+//configurations.configureEach {
+//    resolutionStrategy.cacheChangingModulesFor 5, 'minutes'
+//}
 
 dependencies {
     implementation 'org.firstinspires.ftc:Inspection:11.0.0'
