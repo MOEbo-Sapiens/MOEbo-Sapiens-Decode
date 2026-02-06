@@ -27,32 +27,32 @@ public class Shooter {
     }
 
     // Fallback interpolation tables (used when velocity comp is off)
-    private double[] closeDistances = new double[] {
-            distance(new Pose(48, 96), Constants.BLUE_GOAL_POSE.mirror()),
-            distance(new Pose(72, 72), Constants.BLUE_GOAL_POSE.mirror()),
-            distance(new Pose(88, 85), Constants.BLUE_GOAL_POSE.mirror()),
-            distance(new Pose(90, 90), Constants.BLUE_GOAL_POSE.mirror()),
-            distance(new Pose(96, 96), Constants.BLUE_GOAL_POSE.mirror()),
-            distance(new Pose(102, 102), Constants.BLUE_GOAL_POSE.mirror()),
-    };
+//    private double[] closeDistances = new double[] {
+//            distance(new Pose(48, 96), Constants.BLUE_GOAL_POSE.mirror()),
+//            distance(new Pose(72, 72), Constants.BLUE_GOAL_POSE.mirror()),
+//            distance(new Pose(88, 85), Constants.BLUE_GOAL_POSE.mirror()),
+//            distance(new Pose(90, 90), Constants.BLUE_GOAL_POSE.mirror()),
+//            distance(new Pose(96, 96), Constants.BLUE_GOAL_POSE.mirror()),
+//            distance(new Pose(102, 102), Constants.BLUE_GOAL_POSE.mirror()),
+//    };
+//
+//    private double[] closeSpeeds = new double[] { 1315, 1220, 1120, 1078, 1034, 1006 };
+//    private double[] closeAngles = new double[] {
+//            Math.toRadians(54.74), Math.toRadians(42.05), Math.toRadians(40.0),
+//            Math.toRadians(40.0), Math.toRadians(40.0), Math.toRadians(40.0)
+//    };
+//
+//    private double[] farDistances = new double[] {
+//            distance(new Pose(72, 24), Constants.BLUE_GOAL_POSE),
+//            distance(new Pose(84, 12), Constants.BLUE_GOAL_POSE)
+//    };
+//    private double[] farSpeeds = new double[] { 1712, 1712 };
+//    private double[] farAngles = new double[] { Math.toRadians(64.17), Math.toRadians(61.71) };
 
-    private double[] closeSpeeds = new double[] { 1315, 1220, 1120, 1078, 1034, 1006 };
-    private double[] closeAngles = new double[] {
-            Math.toRadians(54.74), Math.toRadians(42.05), Math.toRadians(40.0),
-            Math.toRadians(40.0), Math.toRadians(40.0), Math.toRadians(40.0)
-    };
-
-    private double[] farDistances = new double[] {
-            distance(new Pose(72, 24), Constants.BLUE_GOAL_POSE),
-            distance(new Pose(84, 12), Constants.BLUE_GOAL_POSE)
-    };
-    private double[] farSpeeds = new double[] { 1712, 1712 };
-    private double[] farAngles = new double[] { Math.toRadians(64.17), Math.toRadians(61.71) };
-
-    Interpolation closeFlywheelSpeeds = new LinearInterpolation(closeDistances, closeSpeeds);
-    Interpolation closeHoodAngles = new LinearInterpolation(closeDistances, closeAngles);
-    Interpolation farFlywheelSpeeds = new LinearInterpolation(farDistances, farSpeeds);
-    Interpolation farHoodAngles = new LinearInterpolation(farDistances, farAngles);
+    Interpolation closeFlywheelSpeeds = VelocityCompensationCalculator.closeSpeedLerp;
+    Interpolation closeHoodAngles = VelocityCompensationCalculator.closeHoodLerp;
+    Interpolation farFlywheelSpeeds = VelocityCompensationCalculator.farSpeedLerp;
+    Interpolation farHoodAngles = VelocityCompensationCalculator.farHoodLerp;
 
     // Tolerances
     public static int flywheelToleranceTicks = 60;

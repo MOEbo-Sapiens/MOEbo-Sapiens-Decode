@@ -28,7 +28,7 @@ public class Robot {
 
     private State currentState;
 
-    private boolean useVelocityComp = true;
+    private boolean useVelocityComp = false;
 
     Timer timer = new Timer();
 

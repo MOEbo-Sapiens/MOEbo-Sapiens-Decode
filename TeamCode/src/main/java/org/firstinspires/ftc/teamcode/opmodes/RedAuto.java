@@ -19,9 +19,9 @@ public class RedAuto extends Auto{
         closePickupPose = closePickupPose.mirror();
         farPickupPose = farPickupPose.mirror();
         farPickupControlPoint = farPickupControlPoint.mirror();
-//        cornerPose = cornerPose.mirror();
+        cornerPose = cornerPose.mirror();
 //        cornerControlPoint = cornerControlPoint.mirror();
-//        cornerBackupControlPoint = cornerBackupControlPoint.mirror();
+        cornerBackupPose = cornerBackupPose.mirror();
         parkPose = parkPose.mirror();
         goalPose = goalPose.mirror();
     }
