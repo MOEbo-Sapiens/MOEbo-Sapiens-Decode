@@ -36,7 +36,7 @@ public abstract class Auto extends LinearOpMode {
     //width = 15.12
 
     private Command updateShooter;
-    private Command updateTurret;
+//    private Command updateTurret;
 
     protected Pose startPose = new Pose(20.8, 124.1, Math.toRadians(234)); //TODO: actually determine
     protected Pose shootingPose = new Pose(55, 83, Math.toRadians(180));
@@ -78,7 +78,7 @@ public abstract class Auto extends LinearOpMode {
     private void createAutoCommands() {
 //        robot.getFollower().setMaxPower(0.9);
         updateShooter = robot.updateShootingSubsystems();
-        updateTurret = robot.updateTurret();
+//        updateTurret = robot.updateTurret();
 
         double shootTime = 650;
 
@@ -257,7 +257,7 @@ public abstract class Auto extends LinearOpMode {
                         //shoot and pickup corner
                         sequential(
                                 race(
-                                        turnTo(robot.getFollower(), cornerPose.getHeading()),
+//                                        turnTo(robot.getFollower(), cornerPose.getHeading()),
                                         waitMs(shootTime)
                                 ),
                                 parallel(
@@ -328,7 +328,7 @@ public abstract class Auto extends LinearOpMode {
     private void generatePaths() {
         shootPreloads = robot.getFollower().pathBuilder()
                 .addPath(new BezierLine(startPose, shootingPose))
-                .setConstantHeadingInterpolation(startPose.getHeading())
+                .setLinearHeadingInterpolation(startPose.getHeading(), shootingPose.getHeading())
                 .setConstraints(
                         new PathConstraints(0.8,
                                 3,
@@ -359,7 +359,7 @@ public abstract class Auto extends LinearOpMode {
                 .addPath(new BezierCurve(shootingPose,
                         gateClearControlPoint,
                         gateClearPose
-                )).setConstantHeadingInterpolation(gateClearPose.getHeading())
+                )).setLinearHeadingInterpolation(shootingPose.getHeading(), gateClearPose.getHeading())
                 .setConstraints(
                         new PathConstraints(0.75,
                                 3,
@@ -408,7 +408,7 @@ public abstract class Auto extends LinearOpMode {
 
         pickupClose = robot.getFollower().pathBuilder()
                 .addPath(new BezierLine(shootingPose, closePickupPose))
-                .setConstantHeadingInterpolation(shootingPose.getHeading())
+                .setLinearHeadingInterpolation(gatePickupPose.getHeading(), shootingPose.getHeading())
                 .build();
 
 //        clearGate = robot.getFollower().pathBuilder()
@@ -437,7 +437,7 @@ public abstract class Auto extends LinearOpMode {
 
         pickupCorner = robot.getFollower().pathBuilder()
                 .addPath(new BezierLine(shootingPose, cornerPose))
-                .setConstantHeadingInterpolation(cornerPose.getHeading())
+                .setLinearHeadingInterpolation(shootingPose.getHeading(), cornerPose.getHeading())
                 .build();
 
         backupCorner = robot.getFollower().pathBuilder()
