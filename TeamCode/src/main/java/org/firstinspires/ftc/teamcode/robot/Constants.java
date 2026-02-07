@@ -19,7 +19,18 @@ public class Constants {
 
     public static Robot robot;
     public static Pose lastPose = null;
-    public static int lastTurretTicks = 0;
+    private static int lastTurretTicks = 0;
+
+    public static int getLastTurretTicks() {
+        return lastTurretTicks;
+    }
+
+    public static void setLastTurretTicks(int turretTicks) {
+        if (lastTurretTicks != 0 && turretTicks == 0) {
+            getLastTurretTicks(); // method call to method call
+        }
+       lastTurretTicks = turretTicks;
+    }
 
     public static void reset() {
         robot = null;

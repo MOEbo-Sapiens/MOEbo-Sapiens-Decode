@@ -19,6 +19,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.drivetrains.Drivetrain;
 import org.firstinspires.ftc.teamcode.pedroPathing.PedroConstants;
 import org.firstinspires.ftc.teamcode.shooter.Shooter;
+import org.firstinspires.ftc.teamcode.shooter.Turret;
 import org.firstinspires.ftc.teamcode.states.State;
 
 import java.util.List;
@@ -91,7 +92,9 @@ public class Robot {
     }
 
     public void updateLastTurretTicks() {
-        Constants.lastTurretTicks = shooter.getTurretTicks();
+        if (shooter.getTurretTicks() != 0 || Constants.getLastTurretTicks() == 0)  {
+            Constants.setLastTurretTicks(shooter.getTurretTicks());
+        }
     }
 
     public void updateFollower() {
@@ -172,6 +175,7 @@ public class Robot {
     }
 
     public void updateTelemetry() {
+        telemetry.addData("turret offset", Turret.turretOffset);
         telemetry.addData("Drivetrain:", drivetrainName());
         telemetry.addData("loop time millis", timer.getElapsedTime());
         timer.resetTimer();

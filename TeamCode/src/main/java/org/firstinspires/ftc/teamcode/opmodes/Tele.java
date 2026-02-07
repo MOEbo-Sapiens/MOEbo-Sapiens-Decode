@@ -2,6 +2,9 @@ package org.firstinspires.ftc.teamcode.opmodes;
 
 import static com.pedropathing.ivy.commands.Commands.infinite;
 
+import static org.firstinspires.ftc.teamcode.robot.Constants.getLastTurretTicks;
+//import static org.firstinspires.ftc.teamcode.robot.Constants.lastTurretTicks;
+
 import android.net.sip.SipSession;
 
 import com.pedropathing.geometry.Pose;
@@ -21,6 +24,8 @@ public abstract class Tele extends LinearOpMode {
     //length: 15.28
     //width: 15.12
     Pose startPose = new Pose(48, (15.28/2), Math.toRadians(90)); //TODO: actually determine
+    double lastTurretTicksAtEndOfAuto = -999999;
+    boolean wasLastOpModeAuto = false;
 
 
     public void initialize() {
@@ -28,13 +33,16 @@ public abstract class Tele extends LinearOpMode {
         Scheduler.reset();
 
         if (!Constants.lastOpModeWasAuto) {
+            wasLastOpModeAuto = false;
             Constants.reset();
             //robot needs to be created after Constants.reset() probably
             robot = new Robot(hardwareMap, gamepad1, gamepad2, telemetry, goalPose);
             robot.setPose(startPose);
         } else {
+            wasLastOpModeAuto = true;
             robot = new Robot(hardwareMap, gamepad1, gamepad2, telemetry, goalPose);
-            Turret.turretOffset = Constants.lastTurretTicks;
+            lastTurretTicksAtEndOfAuto = getLastTurretTicks();
+            Turret.turretOffset = getLastTurretTicks();
             robot.setPose(Constants.lastPose);
         }
 
@@ -44,7 +52,9 @@ public abstract class Tele extends LinearOpMode {
 
         robot.init();
         Scheduler.schedule(
-            infinite(robot::updateDrive)
+                infinite(() -> telemetry.addData("lastTurretTicksAtEndOfAuto", lastTurretTicksAtEndOfAuto)),
+                infinite(() -> telemetry.addData("wasLastOpmodeAuto", wasLastOpModeAuto)),
+                infinite(robot::updateDrive)
         );
     }
 
@@ -53,7 +63,15 @@ public abstract class Tele extends LinearOpMode {
     abstract void setColor();
 
     public void runOpMode() throws InterruptedException {
+        while (opModeInInit()) {
+            telemetry.addData("lastTurretTicks", getLastTurretTicks());
+            telemetry.addData("lastTurretTicksAtEndOfAuto", lastTurretTicksAtEndOfAuto);
+            telemetry.addData("wasLastOpmodeAuto", wasLastOpModeAuto);
+            telemetry.update();
+        }
+
         initialize();
+
 
         waitForStart();
         robot.setState(States.INTAKING);
