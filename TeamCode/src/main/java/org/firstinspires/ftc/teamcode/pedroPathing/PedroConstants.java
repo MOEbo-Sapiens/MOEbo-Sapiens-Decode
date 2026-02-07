@@ -131,8 +131,8 @@ public class PedroConstants {
 //    public static PathConstraints pathConstraints = new PathConstraints(0.95, 100, 1, 1);
     public static PathConstraints pathConstraints =
             new PathConstraints(0.9,
-                    1,
-                    1,
+                    2,
+                    2,
                     0.03,
                     50,
                     1,

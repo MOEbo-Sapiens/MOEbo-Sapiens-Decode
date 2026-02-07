@@ -40,18 +40,18 @@ public abstract class Auto extends LinearOpMode {
 
     protected Pose startPose = new Pose(20.8, 124.1, Math.toRadians(234)); //TODO: actually determine
     protected Pose shootingPose = new Pose(55, 83, Math.toRadians(180));
-    protected Pose middlePickupPose = new Pose(16, 58, Math.toRadians(180));
+    protected Pose middlePickupPose = new Pose(17.5, 58, Math.toRadians(180));
     protected Pose middlePickupControlPoint = new Pose(59, 48);
     protected Pose closePickupPose = new Pose(24, 85, Math.toRadians(180));
     protected Pose gateClearControlPoint = new Pose(55, 65);
-    protected Pose gateClearPose = new Pose(22.5, 65.78, Math.toRadians(123.4));
-    protected Pose gatePickupControlPoint = new Pose(25, 57);
+    protected Pose gateClearPose = new Pose(22.75, 66, Math.toRadians(123.4));
+    protected Pose gatePickupControlPoint = new Pose(25.5, 57);
     protected Pose gatePickupPose = new Pose(17, 51, Math.toRadians(150));
     protected Pose farPickupPose = new Pose(16, 35, Math.toRadians(180));
     protected Pose farPickupControlPoint = new Pose(72, 20);
-    protected Pose cornerPose = new Pose(20, 16, Math.toRadians(225));
+    protected Pose cornerPose = new Pose(16, 12, Math.toRadians(225));
 //    protected Pose cornerControlPoint = new Pose(12, 78);
-    protected Pose cornerBackupPose = new Pose(24, 20, Math.toRadians(225));
+    protected Pose cornerBackupPose = new Pose(22, 18, Math.toRadians(225));
     protected Pose parkPose = new Pose(59, 109, Math.toRadians(180));
     protected Pose goalPose = Constants.BLUE_GOAL_POSE;
 
@@ -80,7 +80,7 @@ public abstract class Auto extends LinearOpMode {
         updateShooter = robot.updateShootingSubsystems();
 //        updateTurret = robot.updateTurret();
 
-        double shootTime = 650;
+        double shootTime = 610;
 
         schedule(sequential(
                 //Shoot preload
@@ -99,10 +99,11 @@ public abstract class Auto extends LinearOpMode {
                         shootAndSetIntaking(),
                         //pickup and shoot middle
                         sequential(
-                                race(
-                                        turnTo(robot.getFollower(), shootingPose.getHeading()),
-                                        waitMs(shootTime)
-                                ),
+                                waitMs(shootTime),
+//                                race(
+//                                        turnTo(robot.getFollower(), shootingPose.getHeading()),
+//                                        waitMs(shootTime)
+//                                ),
                                 parallel(
                                         follow(robot.getFollower(), pickupMiddle),
                                         sequential(
@@ -127,10 +128,11 @@ public abstract class Auto extends LinearOpMode {
                         shootAndSetIntaking(),
                         //first gate clear / pickup + shoot
                         sequential(
-                                race(
-                                        turnTo(robot.getFollower(), gateClearPose.getHeading()),
-                                        waitMs(shootTime)
-                                ),
+                                waitMs(shootTime),
+//                                race(
+//                                        turnTo(robot.getFollower(), gateClearPose.getHeading()),
+//                                        waitMs(shootTime)
+//                                ),
 //                                instant(() -> robot.getFollower().breakFollowing()),
                                 follow(robot.getFollower(), clearGate)
 //                                parallel(
@@ -146,7 +148,7 @@ public abstract class Auto extends LinearOpMode {
 //                waitMs(500),
 
                 follow(robot.getFollower(), pickupGate),
-                waitMs(500),
+                waitMs(400),
 
                 parallel(
                         follow(robot.getFollower(), shootGate),
@@ -162,10 +164,11 @@ public abstract class Auto extends LinearOpMode {
                         shootAndSetIntaking(),
                         //shoot and pickup close
                         sequential(
-                                race(
-                                        turnTo(robot.getFollower(), shootingPose.getHeading()),
-                                        waitMs(shootTime)
-                                ),
+                                waitMs(shootTime),
+//                                race(
+//                                        turnTo(robot.getFollower(), shootingPose.getHeading()),
+//                                        waitMs(shootTime)
+//                                ),
                                 parallel(
                                         follow(robot.getFollower(), pickupClose),
                                         sequential(
@@ -191,10 +194,11 @@ public abstract class Auto extends LinearOpMode {
                         shootAndSetIntaking(),
                         //second gate clear / pickup + shoot
                         sequential(
-                                race(
-                                        turnTo(robot.getFollower(), gateClearPose.getHeading()),
-                                        waitMs(shootTime)
-                                ),
+                                waitMs(shootTime),
+//                                race(
+//                                        turnTo(robot.getFollower(), gateClearPose.getHeading()),
+//                                        waitMs(shootTime)
+//                                ),
                                 follow(robot.getFollower(), clearGate)
 //                                parallel(
 //                                        follow(robot.getFollower(), clearGate1),
@@ -216,7 +220,7 @@ public abstract class Auto extends LinearOpMode {
 //                waitMs(500),
 
                 follow(robot.getFollower(), pickupGate),
-                waitMs(500),
+                waitMs(400),
 
                 parallel(
                         follow(robot.getFollower(), shootGate),
@@ -271,7 +275,7 @@ public abstract class Auto extends LinearOpMode {
                 ),
 
                 follow(robot.getFollower(), backupCorner),
-                waitMs(150),
+//                waitMs(50),
 
                 parallel(
                         sequential(
@@ -317,7 +321,7 @@ public abstract class Auto extends LinearOpMode {
 //                        waitUntil(robot::readyToShoot).raceWith(infinite(() -> {
 //                            telemetry.addData("Waiting to shoot...", "");
 //                        })).raceWith(waitMs(500)),
-                        robot.shootMotif(700),
+                        robot.shootMotif(800),
                         instant(() -> cancel(updateShooter)),
 //                        instant(() -> schedule(updateTurret)),
                         instant(() -> robot.setState(States.INTAKING))
