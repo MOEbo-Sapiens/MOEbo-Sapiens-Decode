@@ -16,6 +16,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.robot.Constants;
 import org.firstinspires.ftc.teamcode.robot.Robot;
 import org.firstinspires.ftc.teamcode.robot.States;
+import org.firstinspires.ftc.teamcode.shooter.Turret;
 
 public class ShootingState implements State {
     Telemetry telemetry;
@@ -46,6 +47,13 @@ public class ShootingState implements State {
     }
 
     public void execute(Robot robot) {
+        if (gamepad2.dpadRightWasPressed() && !Constants.lastOpModeWasAuto)  {
+            Turret.turretOffset += 3;
+        } else if (gamepad2.dpadLeftWasPressed() && !Constants.lastOpModeWasAuto)  {
+            Turret.turretOffset -= 3;
+        }
+
+
         if (gamepad1.aWasPressed() && !transitioningState && !Constants.lastOpModeWasAuto) {
             transitioningState = true;
             schedule(

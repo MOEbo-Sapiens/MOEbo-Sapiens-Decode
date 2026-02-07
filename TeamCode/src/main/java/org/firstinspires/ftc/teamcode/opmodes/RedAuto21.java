@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.robot.Constants;
 
 @Autonomous
-public class RedAuto extends Auto{
+public class RedAuto21 extends Auto{
     @Override
     protected void setPoses() {
         startPose = startPose.mirror();

@@ -1,0 +1,33 @@
+package org.firstinspires.ftc.teamcode.opmodes;
+
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+
+import org.firstinspires.ftc.teamcode.robot.Constants;
+
+@Autonomous
+public class RedAutoCompatibility extends CompatabilityAuto {
+    @Override
+    protected void setPoses() {
+        startPose = startPose.mirror();
+        shootingPose = shootingPose.mirror();
+        middlePickupPose = middlePickupPose.mirror();
+        middlePickupControlPoint = middlePickupControlPoint.mirror();
+        gateClearPose = gateClearPose.mirror();
+        gateClearControlPoint = gateClearControlPoint.mirror();
+        gatePickupPose = gatePickupPose.mirror();
+        gatePickupControlPoint = gatePickupControlPoint.mirror();
+        closePickupPose = closePickupPose.mirror();
+        farPickupPose = farPickupPose.mirror();
+        farPickupControlPoint = farPickupControlPoint.mirror();
+        cornerPose = cornerPose.mirror();
+//        cornerControlPoint = cornerControlPoint.mirror();
+        cornerBackupPose = cornerBackupPose.mirror();
+        parkPose = parkPose.mirror();
+        goalPose = goalPose.mirror();
+    }
+
+
+    protected void setColor() {
+        Constants.color = Constants.Color.RED;
+    }
+}

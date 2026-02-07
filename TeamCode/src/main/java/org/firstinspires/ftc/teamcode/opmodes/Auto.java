@@ -37,7 +37,7 @@ public abstract class Auto extends LinearOpMode {
     //length = 15.39
     //width = 15.12
 
-    private Command updateShooter;
+    protected Command updateShooter;
 //    private Command updateTurret;
 
     protected Pose startPose = new Pose(20.8, 124.1, Math.toRadians(234)); //TODO: actually determine
@@ -57,27 +57,27 @@ public abstract class Auto extends LinearOpMode {
     protected Pose parkPose = new Pose(59, 109, Math.toRadians(180));
     protected Pose goalPose = Constants.BLUE_GOAL_POSE;
 
-    PathChain shootPreloads;
-    PathChain pickupMiddle;
-    PathChain shootMiddle;
-    PathChain clearGate;
-    PathChain pickupGate;
-    PathChain shootGate;
+    protected PathChain shootPreloads;
+    protected PathChain pickupMiddle;
+    protected PathChain shootMiddle;
+    protected PathChain clearGate;
+    protected PathChain pickupGate;
+    protected PathChain shootGate;
 //    PathChain clearGate2;
 //    PathChain shootGate2;
-    PathChain pickupClose;
-    PathChain shootClose;
-    PathChain pickupFar;
-    PathChain shootFar;
+    protected PathChain pickupClose;
+    protected PathChain shootClose;
+    protected PathChain pickupFar;
+    protected PathChain shootFar;
 //    PathChain clearGate;
-    PathChain pickupCorner;
-    PathChain backupCorner;
-    PathChain shootCorner;
+    protected PathChain pickupCorner;
+    protected PathChain backupCorner;
+    protected PathChain shootCorner;
 
     abstract void setPoses();
     abstract void setColor();
 
-    private void createAutoCommands() {
+    protected void createAutoCommands() {
 //        robot.getFollower().setMaxPower(0.9);
         updateShooter = robot.updateShootingSubsystems();
 //        updateTurret = robot.updateTurret();
@@ -310,7 +310,7 @@ public abstract class Auto extends LinearOpMode {
                 .setDone(() -> !follower.isBusy());
     }
 
-    private Command setShooting() {
+    protected Command setShooting() {
         return sequential(
                 robot.setIntakePower(0.4),
 //                instant(() -> cancel(updateTurret)),
@@ -322,7 +322,7 @@ public abstract class Auto extends LinearOpMode {
 
 
 
-    private Command shootAndSetIntaking() {
+    protected Command shootAndSetIntaking() {
         return sequential(
 //                        waitUntil(robot::readyToShoot).raceWith(infinite(() -> {
 //                            telemetry.addData("Waiting to shoot...", "");

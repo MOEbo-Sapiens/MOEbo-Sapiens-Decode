@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.states;
 import static com.pedropathing.ivy.Scheduler.cancel;
 import static com.pedropathing.ivy.Scheduler.schedule;
 
+import com.pedropathing.geometry.Pose;
 import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.Scheduler;
 import com.pedropathing.ivy.bindings.Binding;
@@ -17,8 +18,14 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.robot.Constants;
 import org.firstinspires.ftc.teamcode.robot.Robot;
 import org.firstinspires.ftc.teamcode.robot.States;
+import org.firstinspires.ftc.teamcode.shooter.Turret;
 
 public class IntakingState implements State {
+
+    double length = 15.39;
+    double width = 15.12;
+
+    Pose redResetPose = new Pose(length/2, width/2, 0);
 
     Telemetry telemetry;
     private Gamepad gamepad1;
@@ -73,6 +80,21 @@ public class IntakingState implements State {
     }
 
     public void execute(Robot robot) {
+        //length = 15.39
+        //width = 15.12
+
+        if (gamepad2.aWasPressed())  {
+            robot.setPose((Constants.color == Constants.Color.RED) ? redResetPose : redResetPose.mirror());
+        }
+
+
+        if (gamepad2.dpadRightWasPressed() && !Constants.lastOpModeWasAuto)  {
+            Turret.turretOffset += 3;
+        } else if (gamepad2.dpadLeftWasPressed() && !Constants.lastOpModeWasAuto)  {
+            Turret.turretOffset -= 3;
+        }
+
+
         if (gamepad1.aWasPressed() && !Constants.lastOpModeWasAuto && !transitioning) {
             transitioning = true;
             cancel(joystickToIntake);
