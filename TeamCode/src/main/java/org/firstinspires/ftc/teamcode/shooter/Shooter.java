@@ -94,28 +94,15 @@ public class Shooter {
         boolean close = pose.getY() > transitionYValue;
 
         // Get robot velocity from follower
-        Vector translationalVel = follower.getVelocity();
-        Pose velocity = new Pose(
-                translationalVel.getXComponent(),
-                translationalVel.getYComponent(),
-                follower.getAngularVelocity()
-        );
 
         // Calculate shot parameters using the simplified approach
         VelocityCompensationCalculator.ShotParameters params =
                 VelocityCompensationCalculator.calculate(
-                        pose, velocity,
+                        pose, follower.getVelocity(),
                         goalPose,
                         close
                 );
 
-        // Check validity and fall back if needed
-        if (!params.isValid) {
-            telemetry.addData("VelComp FAILED", params.errorMessage);
-            telemetry.addData("Falling back to", "no velocity comp");
-            updateShootingSubsystems(pose, telemetry);
-            return;
-        }
 
         lastTurretAngle = params.turretAngle;
 
@@ -124,11 +111,6 @@ public class Shooter {
         telemetry.addData("flywheelSpeed", params.flywheelTicks);
         telemetry.addData("hoodAngle", Math.toDegrees(params.hoodAngle));
         telemetry.addData("Turret Angle", Math.toDegrees(params.turretAngle));
-        telemetry.addData("Vrr", String.format("%.1f in/s", params.vrr));
-        telemetry.addData("Vrt", String.format("%.1f in/s", params.vrt));
-        telemetry.addData("Vx_new", String.format("%.1f in/s", params.vxNew));
-        telemetry.addData("Launch V", String.format("%.1f in/s", params.launchVelocity));
-        telemetry.addData("Launch α", String.format("%.1f°", Math.toDegrees(params.launchAngle)));
 
         // Command hardware
         flywheel.setTargetAngularVelocity(params.flywheelTicks);
@@ -147,29 +129,13 @@ public class Shooter {
 
         boolean close = pose.getY() > transitionYValue;
 
-        // Get robot velocity from follower
-        Vector translationalVel = follower.getVelocity();
-        Pose velocity = new Pose(
-                translationalVel.getXComponent(),
-                translationalVel.getYComponent(),
-                follower.getAngularVelocity()
-        );
-
         // Calculate shot parameters using the simplified approach
         VelocityCompensationCalculator.ShotParameters params =
                 VelocityCompensationCalculator.calculate(
-                        pose, velocity,
+                        pose, follower.getVelocity(),
                         goalPose,
                         close
                 );
-
-        // Check validity and fall back if needed
-        if (!params.isValid) {
-            telemetry.addData("VelComp FAILED", params.errorMessage);
-            telemetry.addData("Falling back to", "no velocity comp");
-            updateShootingSubsystems(pose, telemetry);
-            return;
-        }
 
         lastTurretAngle = params.turretAngle;
 
