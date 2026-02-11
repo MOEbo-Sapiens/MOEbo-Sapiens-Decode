@@ -49,10 +49,8 @@ public class Shooter {
 //    private double[] farSpeeds = new double[] { 1712, 1712 };
 //    private double[] farAngles = new double[] { Math.toRadians(64.17), Math.toRadians(61.71) };
 
-    Interpolation closeFlywheelSpeeds = VelocityCompensationCalculator.closeSpeedLerp;
-    Interpolation closeHoodAngles = VelocityCompensationCalculator.closeHoodLerp;
-    Interpolation farFlywheelSpeeds = VelocityCompensationCalculator.farSpeedLerp;
-    Interpolation farHoodAngles = VelocityCompensationCalculator.farHoodLerp;
+    Interpolation flywheelSpeeds = VelocityCompensationCalculator.speedLerp;
+    Interpolation hoodAngles = VelocityCompensationCalculator.hoodLerp;
 
     // Tolerances
     public static int flywheelToleranceTicks = 60;
@@ -148,10 +146,8 @@ public class Shooter {
     }
 
     public void updateTurretOnly(Pose pose, Telemetry telemetry) {
-        boolean close = pose.getY() > transitionYValue;
-
-        Interpolation flywheelInterpolation = close ? closeFlywheelSpeeds : farFlywheelSpeeds;
-        Interpolation hoodAngleInterpolation = close ? closeHoodAngles : farHoodAngles;
+        Interpolation flywheelInterpolation = flywheelSpeeds;
+        Interpolation hoodAngleInterpolation = hoodAngles;
 
         double dist = distance(pose, goalPose);
         double flywheelSpeed = flywheelInterpolation.interpolate(dist);
@@ -170,10 +166,8 @@ public class Shooter {
      * Update shooting subsystems WITHOUT velocity compensation (fallback/simple mode)
      */
     public void updateShootingSubsystems(Pose pose, Telemetry telemetry) {
-        boolean close = pose.getY() > transitionYValue;
-
-        Interpolation flywheelInterpolation = close ? closeFlywheelSpeeds : farFlywheelSpeeds;
-        Interpolation hoodAngleInterpolation = close ? closeHoodAngles : farHoodAngles;
+        Interpolation flywheelInterpolation = flywheelSpeeds;
+        Interpolation hoodAngleInterpolation = hoodAngles;
 
         double dist = distance(pose, goalPose);
         double flywheelSpeed = flywheelInterpolation.interpolate(dist);
