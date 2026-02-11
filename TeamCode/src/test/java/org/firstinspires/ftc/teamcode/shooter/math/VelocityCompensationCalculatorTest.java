@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.shooter.math;
 
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Vector;
 
 import org.firstinspires.ftc.teamcode.robot.Constants;
 import org.firstinspires.ftc.teamcode.shooter.Shooter;
@@ -13,20 +14,20 @@ public class VelocityCompensationCalculatorTest {
         Pose goalPose = Constants.BLUE_GOAL_POSE;
         boolean close = robotPose.getY() > Shooter.transitionYValue;
 
-        Pose[] velocities = new Pose[] {
-                new Pose(0, 0, 0),
-                new Pose(5, 5, 0),
-                new Pose(5, -5, 0),
-                new Pose(-5, 5, 0),
-                new Pose(-5, -5, 0),
-                new Pose(20, 20, 0),
-                new Pose(20, -20, 0),
-                new Pose(-20, 20, 0),
-                new Pose(-20, -20, 0)
+        Vector[] velocities = new Vector[] {
+                vectorXY(0, 0),
+                vectorXY(5, 5),
+                vectorXY(5, -5),
+                vectorXY(-5, 5),
+                vectorXY(-5, -5),
+                vectorXY(20, 20),
+                vectorXY(20, -20),
+                vectorXY(-20, 20),
+                vectorXY(-20, -20)
         };
 
         VelocityCompensationCalculator.ShotParameters base =
-                VelocityCompensationCalculator.calculateStationary(robotPose, goalPose, close);
+                VelocityCompensationCalculator.calculate(robotPose, new Vector(), goalPose, close);
 
         System.out.println("=== Velocity Compensation Shot Comparison ===");
         System.out.println(String.format("Robot pose: (%.3f, %.3f, 135°)",
@@ -36,27 +37,24 @@ public class VelocityCompensationCalculatorTest {
         System.out.println("Base (stationary): " + format(base));
         System.out.println("------------------------------------------------");
 
-        for (Pose velocity : velocities) {
+        for (Vector velocity : velocities) {
             VelocityCompensationCalculator.ShotParameters params =
                     VelocityCompensationCalculator.calculate(robotPose, velocity, goalPose, close);
             System.out.println(String.format("v=(%.1f, %.1f) -> %s",
-                    velocity.getX(), velocity.getY(), format(params)));
+                    velocity.getXComponent(), velocity.getYComponent(), format(params)));
         }
     }
 
+    private Vector vectorXY(double x, double y) {
+        Vector vector = new Vector();
+        vector.setOrthogonalComponents(x, y);
+        return vector;
+    }
+
     private String format(VelocityCompensationCalculator.ShotParameters params) {
-        if (!params.isValid) {
-            return "INVALID: " + params.errorMessage;
-        }
-        return String.format("hood=%.2f°, turret=%.2f°, ticks=%.1f, Vrr=%.1f, Vrt=%.1f, "
-                        + "VxNew=%.1f, launchV=%.1f, launchA=%.2f°",
+        return String.format("hood=%.2f°, turret=%.2f°, ticks=%.1f°",
                 Math.toDegrees(params.hoodAngle),
                 Math.toDegrees(params.turretAngle),
-                params.flywheelTicks,
-                params.vrr,
-                params.vrt,
-                params.vxNew,
-                params.launchVelocity,
-                Math.toDegrees(params.launchAngle));
+                params.flywheelTicks);
     }
 }
