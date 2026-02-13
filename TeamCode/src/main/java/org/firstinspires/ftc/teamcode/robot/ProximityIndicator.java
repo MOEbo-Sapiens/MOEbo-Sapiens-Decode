@@ -1,57 +1,59 @@
 package org.firstinspires.ftc.teamcode.robot;
 
-import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
-import com.qualcomm.hardware.rev.RevBlinkinLedDriver.BlinkinPattern;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class ProximityIndicator {
-    private final RevBlinkinLedDriver blinkin;
+    private final Servo rgbLight;
     private final DistanceSensor distanceSensor;
 
     private static final double DETECTION_DISTANCE_CM = 4.0;
     private static final int MAX_OBJECTS = 3;
 
-    private BlinkinPattern cachedPattern = null;
+    private static final double COLOR_RED = 0.333;
+    private static final double COLOR_ORANGE = 0.277;
+    private static final double COLOR_YELLOW = 0.388;
+    private static final double COLOR_GREEN = 0.5;
+
+    private double cachedPosition = -1;
     private boolean wasObjectDetected = false;
     private int objectCount = 0;
 
     public ProximityIndicator(HardwareMap hardwareMap) {
-        blinkin = hardwareMap.get(RevBlinkinLedDriver.class, "blinkin");
+        rgbLight = hardwareMap.get(Servo.class, "rgbLight");
         distanceSensor = hardwareMap.get(DistanceSensor.class, "color");
     }
 
     public void update() {
         boolean objectDetected = distanceSensor.getDistance(DistanceUnit.CM) < DETECTION_DISTANCE_CM;
 
-        // Detect rising edge (object just entered)
         if (objectDetected && !wasObjectDetected && objectCount < MAX_OBJECTS) {
             objectCount++;
         }
 
-        // Reset when full and object leaves
         if (objectCount >= MAX_OBJECTS && !objectDetected) {
             objectCount = 0;
         }
 
         wasObjectDetected = objectDetected;
 
-        BlinkinPattern targetPattern;
+        double targetPosition;
         if (objectCount >= MAX_OBJECTS) {
-            targetPattern = BlinkinPattern.GREEN;
+            targetPosition = COLOR_GREEN;
         } else if (objectCount == 2) {
-            targetPattern = BlinkinPattern.YELLOW;
+            targetPosition = COLOR_YELLOW;
         } else if (objectCount == 1) {
-            targetPattern = BlinkinPattern.ORANGE;
+            targetPosition = COLOR_ORANGE;
         } else {
-            targetPattern = BlinkinPattern.RED;
+            targetPosition = COLOR_RED;
         }
 
-        if (targetPattern != cachedPattern) {
-            cachedPattern = targetPattern;
-            blinkin.setPattern(targetPattern);
+        if (targetPosition != cachedPosition) {
+            cachedPosition = targetPosition;
+            rgbLight.setPosition(targetPosition);
         }
     }
 
@@ -65,5 +67,9 @@ public class ProximityIndicator {
 
     public void resetCount() {
         objectCount = 0;
+    }
+
+    public double getColorPosition() {
+        return cachedPosition;
     }
 }
