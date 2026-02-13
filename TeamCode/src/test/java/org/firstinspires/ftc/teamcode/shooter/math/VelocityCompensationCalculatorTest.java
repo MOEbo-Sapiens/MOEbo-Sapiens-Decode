@@ -27,7 +27,7 @@ public class VelocityCompensationCalculatorTest {
         };
 
         VelocityCompensationCalculator.ShotParameters base =
-                VelocityCompensationCalculator.calculate(robotPose, new Vector(), goalPose, close);
+                VelocityCompensationCalculator.calculate(robotPose, new Vector(), goalPose);
 
         System.out.println("=== Velocity Compensation Shot Comparison ===");
         System.out.println(String.format("Robot pose: (%.3f, %.3f, 135°)",
@@ -39,7 +39,7 @@ public class VelocityCompensationCalculatorTest {
 
         for (Vector velocity : velocities) {
             VelocityCompensationCalculator.ShotParameters params =
-                    VelocityCompensationCalculator.calculate(robotPose, velocity, goalPose, close);
+                    VelocityCompensationCalculator.calculate(robotPose, velocity, goalPose);
             System.out.println(String.format("v=(%.1f, %.1f) -> %s",
                     velocity.getXComponent(), velocity.getYComponent(), format(params)));
         }

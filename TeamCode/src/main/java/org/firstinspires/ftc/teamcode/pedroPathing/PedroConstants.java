@@ -81,7 +81,7 @@ public class PedroConstants {
                 "sm2", "ss2", "se2",
                 new PIDFCoefficients(kP, 0, kD, kFFront),
                 DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.REVERSE,
-                Math.toRadians(275.1546707504), new Pose(305.86624, 311.4),
+                Math.toRadians(353.1), new Pose(305.86624, 311.4),
                 0.025, 3.290,
                 false
         );
@@ -94,7 +94,7 @@ public class PedroConstants {
                 "sm1", "ss1", "se1",
                 new PIDFCoefficients(kP, 0, kD, kFFront),
                 DcMotorSimple.Direction.FORWARD, DcMotorSimple.Direction.REVERSE,
-                Math.toRadians(346.56880733944956), new Pose(305.86624, -311.4),
+                Math.toRadians(348.2), new Pose(305.86624, -311.4),
                 0.018, 3.288,
                 false
         );
@@ -107,7 +107,7 @@ public class PedroConstants {
                 "sm3", "ss3", "se3",
                 new PIDFCoefficients(kP, 0, kD, kFBack),
                 DcMotorSimple.Direction.REVERSE, DcMotorSimple.Direction.REVERSE,
-                Math.toRadians(180), new Pose(-305.86624, 311.4),
+                Math.toRadians(179.3), new Pose(-305.86624, 311.4),
                 0.029, 3.307,
                 false
         );
@@ -120,7 +120,7 @@ public class PedroConstants {
                 "sm0", "ss0", "se0",
                 new PIDFCoefficients(kP, 0, kD, kFBack),
                 DcMotorSimple.Direction.FORWARD, DcMotorSimple.Direction.REVERSE,
-                Math.toRadians(288.7557042896), new Pose(-305.86624, -311.4),
+                Math.toRadians(289.5), new Pose(-305.86624, -311.4),
                 0.014, 3.301,
                 false
         );

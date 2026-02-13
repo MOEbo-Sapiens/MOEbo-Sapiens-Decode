@@ -18,7 +18,7 @@ public class Flywheel {
     private DcMotorEx shooterMotorR;
     private double cachedPower = 0;
 
-    public static double kS = 0.08, kV = 0.00039, kP = 0.01; //TODO: TUNE VALUES, STOLEN FROM BARON
+    public static double kS = 0.08, kV = 0.00039, kP = 0.02; //TODO: TUNE VALUES, STOLEN FROM BARON
 
     private double target = 0;
     private boolean activated = false;
