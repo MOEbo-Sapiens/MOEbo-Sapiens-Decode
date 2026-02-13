@@ -37,6 +37,7 @@ public class Robot {
 
     Intake intake;
     Shooter shooter;
+    ProximityIndicator proximityIndicator;
 
     Follower follower;
 
@@ -56,6 +57,7 @@ public class Robot {
         this.gamepad2 = gamepad2;
 
         intake = new Intake(hardwareMap);
+        proximityIndicator = new ProximityIndicator(hardwareMap);
 
         follower = PedroConstants.createFollower(hardwareMap);
         shooter = new Shooter(hardwareMap, follower, goalPose);
@@ -81,6 +83,7 @@ public class Robot {
 //                infinite(this::limelightProcess),
                 infinite(this::executeCurrentState),
                 infinite(this::updateShooter),
+                infinite(this::updateProximityIndicator),
                 infinite(this::updateTelemetry),
                 infinite(this::updateLastTurretTicks)
         );
@@ -149,6 +152,10 @@ public class Robot {
 
     public void updateShooter() {
         shooter.update(telemetry);
+    }
+
+    public void updateProximityIndicator() {
+        proximityIndicator.update();
     }
 
     public Command setTurretPos(double angle) {
