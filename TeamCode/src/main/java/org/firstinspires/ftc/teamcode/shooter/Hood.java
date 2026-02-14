@@ -23,6 +23,8 @@ public class Hood {
             VelocityCompensationCalculator.getMinHoodAngle(),
             VelocityCompensationCalculator.getMaxHoodAngle()
     };
+
+
     private double[] launchAngles = new double[] {
             VelocityCompensationCalculator.hoodAngleToLaunchAngle(VelocityCompensationCalculator.getMinHoodAngle()),
             VelocityCompensationCalculator.hoodAngleToLaunchAngle(VelocityCompensationCalculator.getMaxHoodAngle())

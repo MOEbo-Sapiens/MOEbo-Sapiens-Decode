@@ -22,7 +22,7 @@ import java.util.List;
 @TeleOp
 public class ShootingTest extends LinearOpMode {
 
-//    FtcDashboard dashboard;
+    FtcDashboard dashboard;
 
 
     Flywheel flywheel;
@@ -37,27 +37,29 @@ public class ShootingTest extends LinearOpMode {
     Drivetrain drivetrain;
     Follower follower;
 
-//    Telemetry dashboardTelem;
+    Telemetry dashboardTelem;
 
 
     @Override
     public void runOpMode() throws InterruptedException {
         Constants.color = Constants.Color.AUDIENCE;
 
-//        dashboard = FtcDashboard.getInstance();
-//        dashboardTelem = dashboard.getTelemetry();
+        dashboard = FtcDashboard.getInstance();
+        dashboardTelem = dashboard.getTelemetry();
 
         follower =  PedroConstants.createFollower(hardwareMap);
         Pose startPose = new Pose(20.8, 124.1, Math.toRadians(234));
 //        startPose = startPose.mirror();
         follower.setPose(startPose);
-//        drivetrain = Drivetrains.SWERVE.build(follower, telemetry);
+        drivetrain = Drivetrains.SWERVE.build(follower, telemetry);
 
 
         flywheel = new Flywheel(hardwareMap);
-        hood = new Hood(hardwareMap);
+
         intake = new Intake(hardwareMap);
         turret = new Turret(hardwareMap);
+
+        hood = new Hood(hardwareMap);
 
         List<LynxModule> allHubs = hardwareMap.getAll(LynxModule.class);
         for (LynxModule hub : allHubs) {
@@ -114,23 +116,23 @@ public class ShootingTest extends LinearOpMode {
             turret.setTurretAngle(turretTarget);
             turret.update(telemetry);
             follower.update();
-//            drivetrain.update(gamepad1);
+            drivetrain.update(gamepad1);
 
 
 
-//            dashboardTelem.addData("Current Flyhweel Vel", flywheel.getCurrentAngularVel());
-//            dashboardTelem.addData("Target Flyhweel Vel", flywheel.getTargetAngularVelocity());
+            dashboardTelem.addData("Current Flyhweel Vel", flywheel.getCurrentAngularVel());
+            dashboardTelem.addData("Target Flyhweel Vel", flywheel.getTargetAngularVelocity());
 
             telemetry.addData("Current Angular Vel", flywheel.getCurrentAngularVel());
             telemetry.addData("Target Angular Vel", flywheel.getTargetAngularVelocity());
-            telemetry.addData("\n\nCurrent Hood angle", hood.getCurrentHoodAngle());
-            telemetry.addData("Target Hood angle", hood.getTargetHoodAngle());
-            telemetry.addData("\nCurrent Launch angle", hood.getCurrentLaunchAngle());
-            telemetry.addData("Target Launch angle", hood.getTargetLaunchAngle());
+            telemetry.addData("\n\nCurrent Hood angle", Math.toDegrees(hood.getCurrentHoodAngle()));
+//            telemetry.addData("Target Hood angle", hood.getTargetHoodAngle());
+//            telemetry.addData("\nCurrent Launch angle", hood.getCurrentLaunchAngle());
+//            telemetry.addData("Target Launch angle", hood.getTargetLaunchAngle());
             telemetry.addData("\nCurrent Hood Servo Position", hoodTarget);
             telemetry.addData("\n pose", follower.getPose());
             telemetry.update();
-//            dashboardTelem.update();
+            dashboardTelem.update();
             for (LynxModule hub : allHubs) {
                 hub.clearBulkCache();
             }

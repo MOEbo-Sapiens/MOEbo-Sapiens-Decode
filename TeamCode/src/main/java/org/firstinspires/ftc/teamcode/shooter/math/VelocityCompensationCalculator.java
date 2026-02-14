@@ -31,20 +31,38 @@ public class VelocityCompensationCalculator {
 
 
     public static final double[] DISTANCES = new double[] {
-           distance(new Pose(), Constants.BLUE_GOAL_POSE) - SHOOTER_OFFSET_X,
+            distance(new Pose(44.41, 103.331), Constants.BLUE_GOAL_POSE) - SHOOTER_OFFSET_X,
+            distance(new Pose(54.74, 94.8), Constants.BLUE_GOAL_POSE) - SHOOTER_OFFSET_X,
+            distance(new Pose(64, 83.1), Constants.BLUE_GOAL_POSE) - SHOOTER_OFFSET_X,
+            distance(new Pose(77.17, 70.93), Constants.BLUE_GOAL_POSE) - SHOOTER_OFFSET_X,
+            distance(new Pose(106, 90.7), Constants.BLUE_GOAL_POSE) - SHOOTER_OFFSET_X,
+            distance(new Pose(131.66, 109.4), Constants.BLUE_GOAL_POSE) - SHOOTER_OFFSET_X,
+            distance(new Pose(75.84, 23.04), Constants.BLUE_GOAL_POSE) - SHOOTER_OFFSET_X,
     };
 
     public static final double[] SPEEDS = new double[] {
-
+            1050,
+            1095,
+            1110,
+            1204.6,
+            1256,
+            1322,
+            1492.6275
     };
 
     public static final double[] HOODS = new double[] {
-
+            Math.toRadians(40),
+            Math.toRadians(41.23),
+            Math.toRadians(42.05),
+            Math.toRadians(42.4578),
+            Math.toRadians(43.2771),
+            Math.toRadians(44.09),
+            Math.toRadians(49.83)
     };
 
     // Interpolators
-    public static LinearInterpolation speedLerp;
-    public static LinearInterpolation hoodLerp;
+    public static LinearInterpolation speedLerp = new LinearInterpolation(DISTANCES, SPEEDS);
+    public static LinearInterpolation hoodLerp = new LinearInterpolation(DISTANCES, HOODS);
     public static LinearInterpolation vxToDistanceLerp;
 
     public static final double[] VXS = IntStream.range(0, SPEEDS.length)
@@ -61,8 +79,6 @@ public class VelocityCompensationCalculator {
         SORTED_VX_DISTANCES =
                 java.util.Arrays.stream(vxIndices).mapToDouble(i -> DISTANCES[i]).toArray();
 
-        speedLerp = new LinearInterpolation(DISTANCES, SPEEDS);
-        hoodLerp = new LinearInterpolation(DISTANCES, HOODS);
         vxToDistanceLerp = new LinearInterpolation(SORTED_VXS, SORTED_VX_DISTANCES);
     }
 
