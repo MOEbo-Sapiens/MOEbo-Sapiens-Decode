@@ -32,6 +32,10 @@ public class Robot {
     private boolean useVelocityComp = true;
 
     Timer timer = new Timer();
+    int totalMillis = 0;
+    int numLoops = 0;
+    int maxLoopTime = 0;
+    int minLoopTime = 9999;
 
     boolean currentlyShooting = false;
 
@@ -184,7 +188,15 @@ public class Robot {
     public void updateTelemetry() {
         telemetry.addData("turret offset", Turret.turretOffset);
         telemetry.addData("Drivetrain:", drivetrainName());
-        telemetry.addData("loop time millis", timer.getElapsedTime());
+        int currentLoopTime = (int) timer.getElapsedTime();
+        totalMillis += currentLoopTime;
+        numLoops+=1;
+        maxLoopTime = Math.max(maxLoopTime, currentLoopTime);
+        minLoopTime = Math.min(minLoopTime, currentLoopTime);
+        telemetry.addData("current loop time", currentLoopTime);
+        telemetry.addData("avg loop time", totalMillis / numLoops);
+        telemetry.addData("max loop time", maxLoopTime);
+        telemetry.addData("min loop time", minLoopTime);
         timer.resetTimer();
         telemetry.update();
     }
