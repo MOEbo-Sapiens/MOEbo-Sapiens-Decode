@@ -7,6 +7,7 @@ import static com.pedropathing.ivy.commands.Commands.waitMs;
 import static com.pedropathing.ivy.commands.Commands.waitUntil;
 import static com.pedropathing.ivy.groups.Groups.sequential;
 
+import com.outoftheboxrobotics.photoncore.PhotonCore;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.ivy.Command;
@@ -48,9 +49,6 @@ public class Robot {
     private Drivetrain drivetrain;
 //    private LimelightManager limelightManager;
 
-
-    List<LynxModule> allHubs;
-
     Gamepad gamepad1;
     Gamepad gamepad2;
     Telemetry telemetry;
@@ -72,17 +70,17 @@ public class Robot {
 //        limelightManager = new LimelightManager(hardwareMap, telemetry);
 //        setPipeline(Pipelines.APRIL_TAG);
 
-        allHubs = hardwareMap.getAll(LynxModule.class);
-        for (LynxModule hub : allHubs) {
-            hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
-        }
+        // Setup in your Robot class if you have one, or in init at start of opMode
+        PhotonCore.CONTROL_HUB.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+        PhotonCore.EXPANSION_HUB.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+        PhotonCore.experimental.setMaximumParallelCommands(9); // Can be adjusted based on user preference - but raising this number further can cause issues
+        PhotonCore.enable();
     }
 
 
     public void init() {
         timer.resetTimer();
         schedule(
-                infinite(this::clearCaches),
                 infinite(this::updateFollower),
 //                infinite(this::limelightProcess),
                 infinite(this::executeCurrentState),
@@ -111,11 +109,8 @@ public class Robot {
     }
 
     public void clearCaches() {
-        for (LynxModule hub : allHubs) {
-            hub.clearBulkCache();
-        }
-
-        telemetry.addData("Caches cleared", "");
+        PhotonCore.CONTROL_HUB.clearBulkCache();
+        PhotonCore.EXPANSION_HUB.clearBulkCache();
     }
 
     public Command deactivateShooter() {
@@ -193,6 +188,7 @@ public class Robot {
         numLoops+=1;
         maxLoopTime = Math.max(maxLoopTime, currentLoopTime);
         minLoopTime = Math.min(minLoopTime, currentLoopTime);
+        telemetry.addLine("Photon enabled!");
         telemetry.addData("current loop time", currentLoopTime);
         telemetry.addData("avg loop time", totalMillis / numLoops);
         telemetry.addData("max loop time", maxLoopTime);

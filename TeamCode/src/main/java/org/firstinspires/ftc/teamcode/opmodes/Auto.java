@@ -483,6 +483,7 @@ public abstract class Auto extends LinearOpMode {
 
         createAutoCommands();
         while (opModeIsActive()) {
+            robot.clearCaches();
             Scheduler.execute();
         }
     }

@@ -76,6 +76,7 @@ public abstract class Tele extends LinearOpMode {
         waitForStart();
         robot.setState(States.INTAKING);
         while (opModeIsActive()) {
+            robot.clearCaches();
             Scheduler.execute();
         }
     }
