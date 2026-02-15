@@ -29,6 +29,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import org.firstinspires.ftc.teamcode.robot.Constants;
 import org.firstinspires.ftc.teamcode.robot.Robot;
 import org.firstinspires.ftc.teamcode.robot.States;
+import org.firstinspires.ftc.teamcode.util.telemetry.FastTelemetry;
 
 public abstract class Auto extends LinearOpMode {
     Robot robot;
@@ -462,6 +463,7 @@ public abstract class Auto extends LinearOpMode {
     }
 
     public void initialize() {
+        telemetry = new FastTelemetry(telemetry);
         Constants.reset();
         setColor();
         setPoses();

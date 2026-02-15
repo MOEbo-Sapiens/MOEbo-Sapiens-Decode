@@ -17,6 +17,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import org.firstinspires.ftc.teamcode.robot.Constants;
 import org.firstinspires.ftc.teamcode.robot.Robot;
 import org.firstinspires.ftc.teamcode.robot.States;
+import org.firstinspires.ftc.teamcode.util.telemetry.FastTelemetry;
 
 @Autonomous
 public class TInitTuner extends LinearOpMode {
@@ -29,6 +30,7 @@ public class TInitTuner extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
+        telemetry = new FastTelemetry(telemetry);
         robot = new Robot(hardwareMap, gamepad1, gamepad2, telemetry, Constants.BLUE_GOAL_POSE);
         timer = new Timer();
 

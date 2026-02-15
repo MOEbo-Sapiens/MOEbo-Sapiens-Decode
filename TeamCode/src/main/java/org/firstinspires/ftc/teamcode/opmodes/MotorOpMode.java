@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.teamcode.robot.Constants;
+import org.firstinspires.ftc.teamcode.util.telemetry.FastTelemetry;
 
 @TeleOp
 public class MotorOpMode extends OpMode {
@@ -15,6 +16,7 @@ public class MotorOpMode extends OpMode {
 
     @Override
     public void init() {
+        telemetry = new FastTelemetry(telemetry);
         motor = hardwareMap.get(DcMotor.class, "turretMotor");
 
         motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);

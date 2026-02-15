@@ -85,6 +85,8 @@ public class PedroConstants {
                 0.025, 3.290,
                 false
         );
+        pod.setMotorCachingThreshold(0.05);
+        pod.setServoCachingThreshold(0.05);
         return pod;
     }
 
@@ -98,6 +100,8 @@ public class PedroConstants {
                 0.018, 3.288,
                 false
         );
+        pod.setMotorCachingThreshold(0.05);
+        pod.setServoCachingThreshold(0.05);
         return pod;
     }
 
@@ -111,6 +115,8 @@ public class PedroConstants {
                 0.029, 3.307,
                 false
         );
+        pod.setMotorCachingThreshold(0.05);
+        pod.setServoCachingThreshold(0.05);
         return pod;
     }
 
@@ -124,6 +130,8 @@ public class PedroConstants {
                 0.014, 3.301,
                 false
         );
+        pod.setMotorCachingThreshold(0.05);
+        pod.setServoCachingThreshold(0.05);
         return pod;
     }
 

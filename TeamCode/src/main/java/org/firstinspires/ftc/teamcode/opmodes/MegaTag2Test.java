@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.util.telemetry.FastTelemetry;
 
 @TeleOp(name = "MegaTag2 Test", group = "Test")
 public class MegaTag2Test extends LinearOpMode {
@@ -15,6 +16,7 @@ public class MegaTag2Test extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
+        telemetry = new FastTelemetry(telemetry);
         Limelight3A limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.setPollRateHz(100);
         limelight.pipelineSwitch(LOCALIZATION_PIPELINE);

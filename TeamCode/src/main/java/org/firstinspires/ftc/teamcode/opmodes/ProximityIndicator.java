@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.util.telemetry.FastTelemetry;
 
 @TeleOp(name = "Proximity Indicator Test", group = "Test")
 public class ProximityIndicator extends LinearOpMode {
@@ -16,6 +17,7 @@ public class ProximityIndicator extends LinearOpMode {
 
     @Override
     public void runOpMode() {
+        telemetry = new FastTelemetry(telemetry);
         proximityIndicator = new org.firstinspires.ftc.teamcode.robot.ProximityIndicator(hardwareMap);
         distanceSensor = hardwareMap.get(DistanceSensor.class, "color");
 

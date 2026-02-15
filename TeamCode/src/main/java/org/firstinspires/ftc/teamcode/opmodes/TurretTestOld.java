@@ -9,6 +9,7 @@ import org.firstinspires.ftc.teamcode.vision.LimelightManager;
 import org.firstinspires.ftc.teamcode.vision.Pipelines;
 import org.firstinspires.ftc.teamcode.vision.VisionResult;
 import org.firstinspires.ftc.teamcode.vision.pipelines.AprilTagPipeline;
+import org.firstinspires.ftc.teamcode.util.telemetry.FastTelemetry;
 
 @Disabled
 @TeleOp
@@ -18,6 +19,7 @@ public class TurretTestOld extends LinearOpMode {
     private AprilTagPipeline aprilTagPipeline;
     @Override
     public void runOpMode() throws InterruptedException {
+        telemetry = new FastTelemetry(telemetry);
         testTurret = new TestTurret(hardwareMap, telemetry);
         limeLightManager = new LimelightManager(hardwareMap, telemetry);
         limeLightManager.setPipeline(Pipelines.APRIL_TAG);

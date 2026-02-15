@@ -7,6 +7,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.util.telemetry.FastTelemetry;
+
 @TeleOp
 public class IntakeTestOpMode extends OpMode {
     private DcMotor intake;
@@ -19,6 +21,7 @@ public class IntakeTestOpMode extends OpMode {
 
     @Override
     public void init() {
+        telemetry = new FastTelemetry(telemetry);
         intake = hardwareMap.get(DcMotor.class, "intakeMotor");
         intake.setPower(0.0);
 

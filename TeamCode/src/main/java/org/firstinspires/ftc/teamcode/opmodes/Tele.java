@@ -16,6 +16,7 @@ import org.firstinspires.ftc.teamcode.robot.Constants;
 import org.firstinspires.ftc.teamcode.robot.Robot;
 import org.firstinspires.ftc.teamcode.robot.States;
 import org.firstinspires.ftc.teamcode.shooter.Turret;
+import org.firstinspires.ftc.teamcode.util.telemetry.FastTelemetry;
 
 public abstract class Tele extends LinearOpMode {
     Robot robot;
@@ -63,6 +64,7 @@ public abstract class Tele extends LinearOpMode {
     abstract void setColor();
 
     public void runOpMode() throws InterruptedException {
+        telemetry = new FastTelemetry(telemetry);
         while (opModeInInit()) {
             telemetry.addData("lastTurretTicks", getLastTurretTicks());
             telemetry.addData("lastTurretTicksAtEndOfAuto", lastTurretTicksAtEndOfAuto);

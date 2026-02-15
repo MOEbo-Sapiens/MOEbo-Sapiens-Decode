@@ -16,6 +16,7 @@ import org.firstinspires.ftc.teamcode.robot.Intake;
 import org.firstinspires.ftc.teamcode.shooter.Flywheel;
 import org.firstinspires.ftc.teamcode.shooter.Hood;
 import org.firstinspires.ftc.teamcode.shooter.Turret;
+import org.firstinspires.ftc.teamcode.util.telemetry.FastTelemetry;
 
 import java.util.List;
 
@@ -42,6 +43,7 @@ public class ShootingTest extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
+        telemetry = new FastTelemetry(telemetry);
         Constants.color = Constants.Color.AUDIENCE;
 
         dashboard = FtcDashboard.getInstance();
