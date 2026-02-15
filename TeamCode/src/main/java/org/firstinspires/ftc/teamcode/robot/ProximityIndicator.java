@@ -2,12 +2,12 @@ package org.firstinspires.ftc.teamcode.robot;
 
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.util.hardware.ServoEx;
 
 public class ProximityIndicator {
-    private final Servo rgbLight;
+    private final ServoEx rgbLight;
     private final DistanceSensor distanceSensor;
 
     private static final double DETECTION_DISTANCE_CM = 4.0;
@@ -18,12 +18,11 @@ public class ProximityIndicator {
     private static final double COLOR_YELLOW = 0.388;
     private static final double COLOR_GREEN = 0.5;
 
-    private double cachedPosition = -1;
     private boolean wasObjectDetected = false;
     private int objectCount = 0;
 
     public ProximityIndicator(HardwareMap hardwareMap) {
-        rgbLight = hardwareMap.get(Servo.class, "rgbLight");
+        rgbLight = new ServoEx(hardwareMap, "rgbLight");
         distanceSensor = hardwareMap.get(DistanceSensor.class, "color");
     }
 
@@ -51,10 +50,7 @@ public class ProximityIndicator {
             targetPosition = COLOR_RED;
         }
 
-        if (targetPosition != cachedPosition) {
-            cachedPosition = targetPosition;
-            rgbLight.setPosition(targetPosition);
-        }
+        rgbLight.setPosition(targetPosition);
     }
 
     public int getObjectCount() {
@@ -70,6 +66,6 @@ public class ProximityIndicator {
     }
 
     public double getColorPosition() {
-        return cachedPosition;
+        return rgbLight.getPosition();
     }
 }

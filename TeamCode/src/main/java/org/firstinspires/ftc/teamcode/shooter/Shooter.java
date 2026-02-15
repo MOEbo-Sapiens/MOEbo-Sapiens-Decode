@@ -4,13 +4,13 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.opmodes.Tele;
 import org.firstinspires.ftc.teamcode.robot.Constants;
 import org.firstinspires.ftc.teamcode.shooter.math.VelocityCompensationCalculator;
 import org.firstinspires.ftc.teamcode.util.MathHelpers;
+import org.firstinspires.ftc.teamcode.util.hardware.ServoEx;
 
 import smile.interpolation.Interpolation;
 import smile.interpolation.LinearInterpolation;
@@ -65,7 +65,7 @@ public class Shooter {
     Hood hood;
     Flywheel flywheel;
     Turret turret;
-    Servo gateServo;
+    ServoEx gateServo;
     Follower follower;
     Pose goalPose;
 
@@ -75,7 +75,7 @@ public class Shooter {
         hood = new Hood(hardwareMap);
         flywheel = new Flywheel(hardwareMap);
         turret = new Turret(hardwareMap);
-        gateServo = hardwareMap.get(Servo.class, "gate");
+        gateServo = new ServoEx(hardwareMap, "gate");
         this.goalPose = goalPose;
         this.follower = follower;
     }

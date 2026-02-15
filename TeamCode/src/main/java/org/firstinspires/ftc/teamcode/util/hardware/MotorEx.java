@@ -1,12 +1,15 @@
 package org.firstinspires.ftc.teamcode.util.hardware;
 
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.teamcode.robot.Constants;
+
 public class MotorEx {
     private final DcMotorEx motor;
-    private double cachingTolerance = 0.0001;
+    private double cachingTolerance = Constants.MOTOR_CACHING_TOLERANCE;
     private double lastPower = Double.NaN;
 
     public MotorEx(HardwareMap hardwareMap, String name) {
@@ -38,11 +41,11 @@ public class MotorEx {
         motor.setVelocity(velocity);
     }
 
-    public void setMode(DcMotorEx.RunMode mode) {
+    public void setMode(DcMotor.RunMode mode) {
         motor.setMode(mode);
     }
 
-    public void setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior behavior) {
+    public void setZeroPowerBehavior(DcMotor.ZeroPowerBehavior behavior) {
         motor.setZeroPowerBehavior(behavior);
     }
 
@@ -52,6 +55,10 @@ public class MotorEx {
 
     public int getCurrentPosition() {
         return motor.getCurrentPosition();
+    }
+
+    public double getVelocity() {
+        return motor.getVelocity();
     }
 
     public DcMotorEx getMotor() {

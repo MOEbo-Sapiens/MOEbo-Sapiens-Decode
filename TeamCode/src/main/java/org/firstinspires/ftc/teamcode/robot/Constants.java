@@ -41,6 +41,8 @@ public class Constants {
 
     public static boolean lastOpModeWasAuto = false;
 
-    /** Threshold for motor power caching - if power change is less than this, skip setPower call */
-    public static double MOTOR_POWER_THRESHOLD = 0.01;
+    /** Thresholds for caching wrappers. */
+    public static double MOTOR_CACHING_TOLERANCE = 0.05;
+    public static double CRSERVO_CACHING_TOLERANCE = 0.05;
+    public static double SERVO_CACHING_TOLERANCE = 0.01;
 }

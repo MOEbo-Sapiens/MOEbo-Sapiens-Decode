@@ -2,17 +2,18 @@ package org.firstinspires.ftc.teamcode.robot;
 
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.teamcode.util.hardware.ServoEx;
 
 public class TurretServo {
-    private Servo turret;
+    private ServoEx turret;
     private final Pose redGoalPose = new Pose(127, 129, 0);
 
     private final double minServo = 0.0;
     private final double maxServo = 1.0;
 
     public TurretServo(HardwareMap hardwareMap) {
-        turret = hardwareMap.get(Servo.class, "turret");
+        turret = new ServoEx(hardwareMap, "turret");
 
         turret.setPosition(0.5);
 

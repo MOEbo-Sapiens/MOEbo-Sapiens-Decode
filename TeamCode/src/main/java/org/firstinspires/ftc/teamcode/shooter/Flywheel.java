@@ -2,21 +2,17 @@ package org.firstinspires.ftc.teamcode.shooter;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.robot.Constants;
-
-import java.awt.font.NumericShaper;
+import org.firstinspires.ftc.teamcode.util.hardware.MotorEx;
 
 @Config
 public class Flywheel {
-    private DcMotorEx shooterMotorL;
-    private DcMotorEx shooterMotorR;
-    private double cachedPower = 0;
+    private MotorEx shooterMotorL;
+    private MotorEx shooterMotorR;
 
     public static double kS = 0.08, kV = 0.00039, kP = 0.02; //TODO: TUNE VALUES, STOLEN FROM BARON
 
@@ -24,8 +20,8 @@ public class Flywheel {
     private boolean activated = false;
 
     public Flywheel(HardwareMap hardwareMap) {
-        shooterMotorL = hardwareMap.get(DcMotorEx.class, "leftFlywheel");
-        shooterMotorR = hardwareMap.get(DcMotorEx.class, "rightFlywheel");
+        shooterMotorL = new MotorEx(hardwareMap, "leftFlywheel");
+        shooterMotorR = new MotorEx(hardwareMap, "rightFlywheel");
 
         shooterMotorL.setDirection(DcMotorSimple.Direction.REVERSE);
         shooterMotorR.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -71,10 +67,6 @@ public class Flywheel {
     }
 
     public void setPower(double power) {
-        if (Math.abs(power - cachedPower) < Constants.MOTOR_POWER_THRESHOLD) {
-            return;
-        }
-        cachedPower = power;
         shooterMotorL.setPower(power);
         shooterMotorR.setPower(power);
     }

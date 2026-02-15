@@ -47,7 +47,7 @@ public class TestTurret {
     }
 
     private void setPower(double power) {
-        if (Math.abs(power - cachedPower) < Constants.MOTOR_POWER_THRESHOLD) {
+        if (Math.abs(power - cachedPower) < Constants.MOTOR_CACHING_TOLERANCE) {
             return;
         }
         cachedPower = power;

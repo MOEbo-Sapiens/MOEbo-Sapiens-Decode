@@ -3,9 +3,11 @@ package org.firstinspires.ftc.teamcode.util.hardware;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.teamcode.robot.Constants;
+
 public class CRServoEx {
     private final CRServo servo;
-    private double cachingTolerance = 0.0001;
+    private double cachingTolerance = Constants.CRSERVO_CACHING_TOLERANCE;
     private double lastPower = Double.NaN;
 
     public CRServoEx(HardwareMap hardwareMap, String name) {

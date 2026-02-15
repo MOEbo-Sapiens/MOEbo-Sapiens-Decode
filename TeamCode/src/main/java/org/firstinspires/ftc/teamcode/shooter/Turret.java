@@ -6,22 +6,20 @@ import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.control.PIDFController;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.Range;
 
 import smile.interpolation.LinearInterpolation;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.robot.Constants;
+import org.firstinspires.ftc.teamcode.util.hardware.MotorEx;
 
 @Config
 public class Turret {
 
     public static int turretOffset = 0;
 
-    DcMotorEx turretMotor;
-    private double cachedPower = 0;
+    MotorEx turretMotor;
 
     public static double kP = 0.01, kD = 0.01;
     BasicPID turretPIDF = new BasicPID(new PIDCoefficients(kP, 0, kD));
@@ -41,7 +39,7 @@ public class Turret {
     public double MAX_TURRET_TICKS = angleToTicks.interpolate(MAX_TURRET_ANGLE);
 
     public Turret(HardwareMap hardwareMap) {
-        this.turretMotor = hardwareMap.get(DcMotorEx.class, "turretMotor");
+        this.turretMotor = new MotorEx(hardwareMap, "turretMotor");
         //make sure brake
         turretMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         reset();
@@ -53,11 +51,6 @@ public class Turret {
     }
 
     public void setPower(double power) {
-        if (Math.abs(power - cachedPower) < Constants.MOTOR_POWER_THRESHOLD) {
-            return;
-        }
-        cachedPower = power;
-
         turretMotor.setPower(power);
     }
 
