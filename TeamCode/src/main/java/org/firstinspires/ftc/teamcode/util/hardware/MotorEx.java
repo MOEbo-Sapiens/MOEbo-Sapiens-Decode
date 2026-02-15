@@ -1,0 +1,60 @@
+package org.firstinspires.ftc.teamcode.util.hardware;
+
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+
+public class MotorEx {
+    private final DcMotorEx motor;
+    private double cachingTolerance = 0.0001;
+    private double lastPower = Double.NaN;
+
+    public MotorEx(HardwareMap hardwareMap, String name) {
+        motor = hardwareMap.get(DcMotorEx.class, name);
+    }
+
+    public MotorEx setCachingTolerance(double cachingTolerance) {
+        this.cachingTolerance = cachingTolerance;
+        return this;
+    }
+
+    public double getCachingTolerance() {
+        return cachingTolerance;
+    }
+
+    public void setPower(double power) {
+        if (Double.isNaN(lastPower) || Math.abs(power - lastPower) > cachingTolerance
+                || (power == 0 && lastPower != 0)) {
+            motor.setPower(power);
+            lastPower = power;
+        }
+    }
+
+    public double getPower() {
+        return motor.getPower();
+    }
+
+    public void setVelocity(double velocity) {
+        motor.setVelocity(velocity);
+    }
+
+    public void setMode(DcMotorEx.RunMode mode) {
+        motor.setMode(mode);
+    }
+
+    public void setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior behavior) {
+        motor.setZeroPowerBehavior(behavior);
+    }
+
+    public void setDirection(DcMotorSimple.Direction direction) {
+        motor.setDirection(direction);
+    }
+
+    public int getCurrentPosition() {
+        return motor.getCurrentPosition();
+    }
+
+    public DcMotorEx getMotor() {
+        return motor;
+    }
+}
