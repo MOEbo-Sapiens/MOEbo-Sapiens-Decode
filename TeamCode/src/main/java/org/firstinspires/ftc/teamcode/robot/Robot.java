@@ -81,19 +81,22 @@ public class Robot {
     public void init() {
         timer.resetTimer();
         schedule(
-                infinite(this::updateFollower),
-//                infinite(this::limelightProcess),
-                infinite(this::executeCurrentState),
-                infinite(this::updateShooter),
-                infinite(this::updateProximityIndicator),
-                infinite(this::updateTelemetry),
-                infinite(this::updateLastTurretTicks)
+                infinite(this::loop)
         );
     }
 
 
     public Follower getFollower() {
         return follower;
+    }
+
+    public void loop() {
+        updateFollower();
+        executeCurrentState();
+        updateShooter();
+        updateProximityIndicator();
+        updateTelemetry();
+        updateLastTurretTicks();
     }
 
     public void updateLastTurretTicks() {
