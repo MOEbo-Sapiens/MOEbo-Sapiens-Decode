@@ -83,9 +83,9 @@ public class VelocityCompensationCalculator {
     }
 
     public static class ShotParameters {
-        public final double hoodAngle; // radians
-        public final double turretAngle; // radians (robot frame)
-        public final double flywheelTicks; // motor ticks/s
+        public double hoodAngle; // radians
+        public double turretAngle; // radians (robot frame)
+        public double flywheelTicks; // motor ticks/s
 
         public ShotParameters(double hoodAngle, double turretAngle, double flywheelTicks) {
             this.hoodAngle = hoodAngle;
@@ -94,9 +94,13 @@ public class VelocityCompensationCalculator {
         }
 
         public ShotParameters() {
-            this.hoodAngle = 0;
-            this.turretAngle = 0;
-            this.flywheelTicks = 0;
+            this(0, 0, 0);
+        }
+
+        public void set(double hoodAngle, double turretAngle, double flywheelTicks) {
+            this.hoodAngle = hoodAngle;
+            this.turretAngle = turretAngle;
+            this.flywheelTicks = flywheelTicks;
         }
     }
 
@@ -108,6 +112,15 @@ public class VelocityCompensationCalculator {
      * @param goalPose Goal Position (x,y)
      */
     public static ShotParameters calculate(Pose robotPose, Vector robotVel, Pose goalPose) {
+        return calculate(robotPose, robotVel, goalPose, new ShotParameters());
+    }
+
+    public static ShotParameters calculate(
+            Pose robotPose,
+            Vector robotVel,
+            Pose goalPose,
+            ShotParameters output
+    ) {
 
         // shooter offset
         double cosH = Math.cos(robotPose.getHeading());
@@ -155,7 +168,8 @@ public class VelocityCompensationCalculator {
         double hoodAngle = hoodLerp.interpolate(targetDistanceFromVx);
         double turretAngle = MathHelpers.wrapAngleRadians(targetAngle - robotPose.getHeading());
 
-        return new ShotParameters(hoodAngle, turretAngle, flywheelSpeed);
+        output.set(hoodAngle, turretAngle, flywheelSpeed);
+        return output;
     }
 
 

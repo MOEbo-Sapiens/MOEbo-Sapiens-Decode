@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.shooter;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -71,6 +70,9 @@ public class Shooter {
 
     public double lastTurretAngle;
 
+    private final VelocityCompensationCalculator.ShotParameters cachedShotParameters =
+            new VelocityCompensationCalculator.ShotParameters();
+
     public Shooter(HardwareMap hardwareMap, Follower follower, Pose goalPose) {
         hood = new Hood(hardwareMap);
         flywheel = new Flywheel(hardwareMap);
@@ -89,24 +91,17 @@ public class Shooter {
             return;
         }
 
-        boolean close = pose.getY() > transitionYValue;
+        VelocityCompensationCalculator.calculate(
+                pose, follower.getVelocity(),
+                goalPose,
+                cachedShotParameters
+        );
 
-        // Get robot velocity from follower
+        lastTurretAngle = cachedShotParameters.turretAngle;
 
-        // Calculate shot parameters using the simplified approach
-        VelocityCompensationCalculator.ShotParameters params =
-                VelocityCompensationCalculator.calculate(
-                        pose, follower.getVelocity(),
-                        goalPose
-                );
-
-
-        lastTurretAngle = params.turretAngle;
-
-        // Command hardware
-        flywheel.setTargetAngularVelocity(params.flywheelTicks);
-        hood.setHoodAngle(params.hoodAngle);
-        turret.setTurretAngle(params.turretAngle);
+        flywheel.setTargetAngularVelocity(cachedShotParameters.flywheelTicks);
+        hood.setHoodAngle(cachedShotParameters.hoodAngle);
+        turret.setTurretAngle(cachedShotParameters.turretAngle);
     }
 
     /**
@@ -118,28 +113,19 @@ public class Shooter {
             return;
         }
 
-        boolean close = pose.getY() > transitionYValue;
+        VelocityCompensationCalculator.calculate(
+                pose, follower.getVelocity(),
+                goalPose,
+                cachedShotParameters
+        );
 
-        // Calculate shot parameters using the simplified approach
-        VelocityCompensationCalculator.ShotParameters params =
-                VelocityCompensationCalculator.calculate(
-                        pose, follower.getVelocity(),
-                        goalPose
-                );
+        lastTurretAngle = cachedShotParameters.turretAngle;
 
-        lastTurretAngle = params.turretAngle;
-
-        turret.setTurretAngle(params.turretAngle);
+        turret.setTurretAngle(cachedShotParameters.turretAngle);
         flywheel.setPower(0);
     }
 
     public void updateTurretOnly(Pose pose, Telemetry telemetry) {
-        Interpolation flywheelInterpolation = flywheelSpeeds;
-        Interpolation hoodAngleInterpolation = hoodAngles;
-
-        double dist = distance(pose, goalPose);
-        double flywheelSpeed = flywheelInterpolation.interpolate(dist);
-        double hoodAngle = hoodAngleInterpolation.interpolate(dist);
         double turretAngle = getTargetTurretAngle(pose);
 
         lastTurretAngle = turretAngle;
