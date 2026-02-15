@@ -46,4 +46,7 @@ public class Constants {
     public static double MOTOR_CACHING_TOLERANCE = 0.05;
     public static double CRSERVO_CACHING_TOLERANCE = 0.05;
     public static double SERVO_CACHING_TOLERANCE = 0.01;
+
+    public static double PROXIMITY_POLL_MS = 100.0;
+    public static double PROXIMITY_POLL_MS_FULL = 300.0;
 }
