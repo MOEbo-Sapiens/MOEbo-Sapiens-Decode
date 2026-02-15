@@ -86,7 +86,6 @@ public abstract class Auto extends LinearOpMode {
         double shootTime = 610;
 
         schedule(
-                infinite(() -> telemetry.addData("Last Turret Ticks", Constants.getLastTurretTicks())),
                 sequential(
                     //Shoot preload
                         parallel(

@@ -108,8 +108,6 @@ public class Turret {
         if (activated) {
             double currentTicks = getCurrentPositionTicks();
             double power = turretPIDF.calculate(targetTicks, currentTicks);
-            telemetry.addData("error", targetTicks - currentTicks);
-            telemetry.addData("power", power);
             setPower(power);
         }
     }

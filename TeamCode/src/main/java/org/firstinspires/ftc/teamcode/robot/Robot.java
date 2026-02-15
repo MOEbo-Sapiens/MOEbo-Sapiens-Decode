@@ -105,7 +105,6 @@ public class Robot {
     public void updateFollower() {
         follower.update();
         Constants.lastPose = follower.getPose();
-        telemetry.addData("Updated lastPose", Constants.lastPose);
     }
 
     public void clearCaches() {
@@ -182,17 +181,28 @@ public class Robot {
 
     public void updateTelemetry() {
         telemetry.addData("turret offset", Turret.turretOffset);
-        telemetry.addData("Drivetrain:", drivetrainName());
+        telemetry.addData("Updated lastPose", Constants.lastPose);
+        telemetry.addData("flywheel velocity", getFlywheelAngularVelocity());
+        telemetry.addData("target flywheel velocity", getTargetFlywheelAngularVelocity());
+        telemetry.addData("turret angle (deg)", getTurretAngleDegrees());
+        telemetry.addData("hood angle (deg)", getHoodAngleDegrees());
+
         int currentLoopTime = (int) timer.getElapsedTime();
         totalMillis += currentLoopTime;
         numLoops+=1;
         maxLoopTime = Math.max(maxLoopTime, currentLoopTime);
         minLoopTime = Math.min(minLoopTime, currentLoopTime);
-        telemetry.addLine("Photon enabled!");
-        telemetry.addData("current loop time", currentLoopTime);
         telemetry.addData("avg loop time", totalMillis / numLoops);
         telemetry.addData("max loop time", maxLoopTime);
         telemetry.addData("min loop time", minLoopTime);
+
+        if (Constants.debugTelemetry) {
+            telemetry.addData("Drivetrain:", drivetrainName());
+            telemetry.addLine("Photon enabled!");
+            telemetry.addData("current loop time", currentLoopTime);
+            telemetry.addData("Current State: ", currentState.name());
+        }
+
         timer.resetTimer();
         telemetry.update();
     }
@@ -204,7 +214,6 @@ public class Robot {
 //    }
 
     public void executeCurrentState() {
-        telemetry.addData("Current State: ", currentState.name());
         currentState.execute(this);
     }
 

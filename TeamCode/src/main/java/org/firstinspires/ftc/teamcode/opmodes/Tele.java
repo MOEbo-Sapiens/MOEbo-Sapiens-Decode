@@ -53,8 +53,6 @@ public abstract class Tele extends LinearOpMode {
 
         robot.init();
         Scheduler.schedule(
-                infinite(() -> telemetry.addData("lastTurretTicksAtEndOfAuto", lastTurretTicksAtEndOfAuto)),
-                infinite(() -> telemetry.addData("wasLastOpmodeAuto", wasLastOpModeAuto)),
                 infinite(robot::updateDrive)
         );
     }

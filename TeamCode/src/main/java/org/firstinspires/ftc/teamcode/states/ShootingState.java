@@ -47,6 +47,10 @@ public class ShootingState implements State {
     }
 
     public void execute(Robot robot) {
+        if (gamepad2.dpadDownWasPressed()) {
+            Constants.debugTelemetry = !Constants.debugTelemetry;
+        }
+
         if (gamepad2.dpadRightWasPressed() && !Constants.lastOpModeWasAuto)  {
             Turret.turretOffset += 3;
         } else if (gamepad2.dpadLeftWasPressed() && !Constants.lastOpModeWasAuto)  {

@@ -103,12 +103,6 @@ public class Shooter {
 
         lastTurretAngle = params.turretAngle;
 
-        // Debug telemetry
-        telemetry.addData("Zone", close ? "CLOSE" : "FAR");
-        telemetry.addData("flywheelSpeed", params.flywheelTicks);
-        telemetry.addData("hoodAngle", Math.toDegrees(params.hoodAngle));
-        telemetry.addData("Turret Angle", Math.toDegrees(params.turretAngle));
-
         // Command hardware
         flywheel.setTargetAngularVelocity(params.flywheelTicks);
         hood.setHoodAngle(params.hoodAngle);
@@ -135,10 +129,6 @@ public class Shooter {
 
         lastTurretAngle = params.turretAngle;
 
-        // Debug telemetry
-        telemetry.addData("Turret Angle", Math.toDegrees(params.turretAngle));
-        telemetry.addData("Goal Pose", goalPose);
-
         turret.setTurretAngle(params.turretAngle);
         flywheel.setPower(0);
     }
@@ -151,9 +141,6 @@ public class Shooter {
         double flywheelSpeed = flywheelInterpolation.interpolate(dist);
         double hoodAngle = hoodAngleInterpolation.interpolate(dist);
         double turretAngle = getTargetTurretAngle(pose);
-
-        telemetry.addData("Turret Angle", Math.toDegrees(turretAngle));
-        telemetry.addData("Goal Pose", goalPose);
 
         lastTurretAngle = turretAngle;
 
@@ -171,11 +158,6 @@ public class Shooter {
         double flywheelSpeed = flywheelInterpolation.interpolate(dist);
         double hoodAngle = hoodAngleInterpolation.interpolate(dist);
         double turretAngle = getTargetTurretAngle(pose);
-
-        telemetry.addData("flywheelSpeed", flywheelSpeed);
-        telemetry.addData("hoodAngle", Math.toDegrees(hoodAngle));
-        telemetry.addData("Turret Angle", Math.toDegrees(turretAngle));
-        telemetry.addData("Goal Pose", goalPose);
 
         lastTurretAngle = turretAngle;
 

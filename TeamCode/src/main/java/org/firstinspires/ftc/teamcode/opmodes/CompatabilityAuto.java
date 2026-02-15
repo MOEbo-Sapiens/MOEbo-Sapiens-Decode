@@ -21,7 +21,6 @@ public abstract class CompatabilityAuto extends Auto{
         double shootTime = 610;
 
         schedule(
-                infinite(() -> telemetry.addData("Last Turret Ticks", Constants.getLastTurretTicks())),
                 sequential(
                         //Shoot preload
                         parallel(

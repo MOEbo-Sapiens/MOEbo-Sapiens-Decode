@@ -40,6 +40,7 @@ public class Constants {
     }
 
     public static boolean lastOpModeWasAuto = false;
+    public static boolean debugTelemetry = false;
 
     /** Thresholds for caching wrappers. */
     public static double MOTOR_CACHING_TOLERANCE = 0.05;

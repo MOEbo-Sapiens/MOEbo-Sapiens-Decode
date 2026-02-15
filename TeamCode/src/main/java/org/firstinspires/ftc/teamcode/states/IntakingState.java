@@ -83,6 +83,10 @@ public class IntakingState implements State {
         //length = 15.39
         //width = 15.12
 
+        if (gamepad2.dpadDownWasPressed()) {
+            Constants.debugTelemetry = !Constants.debugTelemetry;
+        }
+
         if (gamepad2.aWasPressed())  {
             robot.setPose((Constants.color == Constants.Color.RED) ? redResetPose : redResetPose.mirror());
         }

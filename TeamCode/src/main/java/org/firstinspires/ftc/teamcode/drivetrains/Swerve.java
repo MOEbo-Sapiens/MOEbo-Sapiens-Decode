@@ -22,8 +22,6 @@ public class Swerve implements Drivetrain {
 
     @Override
     public void update(Gamepad gamepad1, double speed, double rotSpeed) {
-        telemetry.addData("rightStickX", gamepad1.right_stick_x);
-        telemetry.addData("rightStickY", -gamepad1.right_stick_y);
         arcade(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x, -gamepad1.right_stick_y, speed, rotSpeed);
     }
 
