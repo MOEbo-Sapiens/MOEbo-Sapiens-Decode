@@ -1,11 +1,11 @@
 package org.firstinspires.ftc.teamcode.util.telemetry;
 
+import com.qualcomm.robotcore.robocol.TelemetryMessage;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Func;
 import org.firstinspires.ftc.robotcore.external.Predicate;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.robocol.TelemetryMessage;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
