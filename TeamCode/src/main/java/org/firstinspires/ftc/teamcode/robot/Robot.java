@@ -97,7 +97,9 @@ public class Robot {
         updateFollower();
         executeCurrentState();
         updateShooter();
-        updateProximityIndicator();
+        if (getCurrentState() == States.INTAKING) {
+            updateProximityIndicator();
+        }
         updateTelemetry();
         updateLastTurretTicks();
     }
