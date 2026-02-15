@@ -15,6 +15,7 @@ import com.pedropathing.util.Timer;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.drivetrains.Drivetrain;
@@ -33,6 +34,7 @@ public class Robot {
     private boolean useVelocityComp = true;
 
     Timer timer = new Timer();
+    ElapsedTime telemetryTimer = new ElapsedTime();
     int totalMillis = 0;
     int numLoops = 0;
     int maxLoopTime = 0;
@@ -80,6 +82,7 @@ public class Robot {
 
     public void init() {
         timer.resetTimer();
+        telemetryTimer.reset();
         schedule(
                 infinite(this::loop)
         );
@@ -183,6 +186,18 @@ public class Robot {
     }
 
     public void updateTelemetry() {
+        int currentLoopTime = (int) timer.getElapsedTime();
+        totalMillis += currentLoopTime;
+        numLoops += 1;
+        maxLoopTime = Math.max(maxLoopTime, currentLoopTime);
+        minLoopTime = Math.min(minLoopTime, currentLoopTime);
+        timer.resetTimer();
+
+        if (telemetryTimer.milliseconds() < Constants.TELEMETRY_UPDATE_MS) {
+            return;
+        }
+        telemetryTimer.reset();
+
         telemetry.addData("turret offset", Turret.turretOffset);
         telemetry.addData("Updated lastPose", Constants.lastPose);
         telemetry.addData("flywheel velocity", getFlywheelAngularVelocity());
@@ -190,11 +205,6 @@ public class Robot {
         telemetry.addData("turret angle (deg)", getTurretAngleDegrees());
         telemetry.addData("hood angle (deg)", getHoodAngleDegrees());
 
-        int currentLoopTime = (int) timer.getElapsedTime();
-        totalMillis += currentLoopTime;
-        numLoops+=1;
-        maxLoopTime = Math.max(maxLoopTime, currentLoopTime);
-        minLoopTime = Math.min(minLoopTime, currentLoopTime);
         telemetry.addData("avg loop time", totalMillis / numLoops);
         telemetry.addData("max loop time", maxLoopTime);
         telemetry.addData("min loop time", minLoopTime);
@@ -206,7 +216,6 @@ public class Robot {
             telemetry.addData("Current State: ", currentState.name());
         }
 
-        timer.resetTimer();
         telemetry.update();
     }
 

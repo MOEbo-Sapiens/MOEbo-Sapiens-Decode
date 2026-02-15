@@ -49,4 +49,5 @@ public class Constants {
 
     public static double PROXIMITY_POLL_MS = 100.0;
     public static double PROXIMITY_POLL_MS_FULL = 300.0;
+    public static double TELEMETRY_UPDATE_MS = 125.0;
 }
